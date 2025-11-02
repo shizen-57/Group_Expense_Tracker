@@ -63,7 +63,7 @@ export function SignupForm({ onSignup, onSwitchToLogin }: SignupFormProps) {
               <Input
                 id="name"
                 type="text"
-                placeholder="John Doe"
+                placeholder="Your Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="pl-10 h-12 bg-white/50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 focus:border-emerald-500 focus:ring-emerald-500"
@@ -79,7 +79,7 @@ export function SignupForm({ onSignup, onSwitchToLogin }: SignupFormProps) {
               <Input
                 id="username"
                 type="text"
-                placeholder="johndoe"
+                placeholder="Username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="pl-10 h-12 bg-white/50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 focus:border-emerald-500 focus:ring-emerald-500"
@@ -111,10 +111,12 @@ export function SignupForm({ onSignup, onSwitchToLogin }: SignupFormProps) {
               <Input
                 id="phone"
                 type="tel"
-                placeholder="+1 234 567 8900"
+                placeholder="+880 XXXXXXXXXXX"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                pattern="^\+880\d{11}$"
                 className="pl-10 h-12 bg-white/50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 focus:border-emerald-500 focus:ring-emerald-500"
+                title="Phone number must be in format: +880 followed by 11 digits"
               />
             </div>
           </div>

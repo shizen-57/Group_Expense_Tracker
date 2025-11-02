@@ -51,7 +51,7 @@ export function AddMemberDialog({ onAddMember }: AddMemberDialogProps) {
             <Label htmlFor="username">Username</Label>
             <Input
               id="username"
-              placeholder="e.g., @johndoe"
+              placeholder="e.g., @UserName"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
