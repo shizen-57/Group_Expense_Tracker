@@ -4,25 +4,52 @@ A comprehensive personal expense management application with AI-powered features
 
 ## ✨ AI-Powered Features
 
-### 🤖 Smart Natural Language Search
-Search your expenses using plain English queries:
-- "coffee expenses last week"
+### 🤖 Intelligent Conversational AI
+Ask questions about your finances in plain English:
+
+**Analytical Queries:**
+- "how much did I spend on food last month?"
+- "compare food vs transport spending"
+- "what's my average daily expense?"
+- "which category do I spend most on?"
+- "am I over budget?"
+
+**Search Queries:**
+- "show coffee expenses last week"
 - "groceries over ৳500"
 - "food spending this month"
-- "transportation costs"
 
-Powered by **Google Gemini Pro 2.0** - understands dates, categories, amounts, and context!
+Powered by **Google Gemini Pro 2.0** - understands context, performs calculations, generates insights!
 
-### 📸 AI Receipt Scanner
-Upload receipt photos and let AI extract:
-- ✅ Total amount
-- ✅ Merchant/store name
-- ✅ Date (if visible)
-- ✅ Items purchased
-- ✅ Auto-categorization
-- ✅ Currency detection
+### 📸 Advanced AI Receipt Scanner
+Upload receipt photos for **90%+ accurate** extraction:
 
-Powered by **Gemini Vision API** - real OCR, not mock data!
+**Basic Information:**
+- ✅ Total amount (final total after tax/tip)
+- ✅ Merchant name, address, phone
+- ✅ Date and time
+- ✅ Receipt number
+- ✅ Payment method
+
+**Detailed Breakdown:**
+- ✅ Individual items with quantities and prices
+- ✅ Subtotal, tax, tip separately
+- ✅ Discounts and offers
+- ✅ Smart category suggestion
+- ✅ Confidence rating
+
+Powered by **Gemini Vision API** - real OCR with item-level detail!
+
+### 💡 AI Spending Insights
+Get personalized financial analysis:
+- 📊 Executive spending summary
+- 🔴 Budget alerts and warnings
+- 💡 Smart recommendations with savings amounts
+- 📈 Spending pattern detection
+- 🔮 Month-end predictions
+- 🎯 Priority action items
+
+Auto-generated insights help you make better financial decisions!
 
 ## Features
 

@@ -9,6 +9,7 @@ import { AddExpenseDialog } from './AddExpenseDialog'
 import { ReceiptScannerDialog } from './ReceiptScannerDialog'
 import { NaturalLanguageSearch } from './NaturalLanguageSearch'
 import { TrendAnalytics } from './TrendAnalytics'
+import { AIInsights } from './AIInsights'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 
 interface ExpensesProps {
@@ -21,8 +22,9 @@ interface ExpensesProps {
   onDeleteExpense: (id: string) => void
   onCreateBudget: (data: any) => Promise<any>
   onDeleteBudget: (id: string) => void
-  onSearch: (query: string) => Promise<any[]>
+  onSearch: (query: string) => Promise<any>
   onScanReceipt: (file: File) => Promise<any>
+  onGetAIInsights?: () => Promise<any>
 }
 
 export function Expenses({
@@ -35,7 +37,8 @@ export function Expenses({
   onCreateBudget,
   onDeleteBudget,
   onSearch,
-  onScanReceipt
+  onScanReceipt,
+  onGetAIInsights
 }: ExpensesProps) {
   const [addExpenseOpen, setAddExpenseOpen] = useState(false)
   const [scannerOpen, setScannerOpen] = useState(false)
@@ -100,6 +103,11 @@ export function Expenses({
 
       {/* Natural Language Search */}
       <NaturalLanguageSearch onSearch={onSearch} />
+
+      {/* AI Insights */}
+      {onGetAIInsights && (
+        <AIInsights onFetchInsights={onGetAIInsights} />
+      )}
 
       {/* Monthly Summary */}
       <MonthlySpendingSummary expenses={expenses} budgets={budgets} stats={stats} />

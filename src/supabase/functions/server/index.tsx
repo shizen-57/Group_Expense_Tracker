@@ -1417,75 +1417,243 @@ async function callGeminiVisionAPI(imageBase64: string, prompt: string) {
   return data.candidates[0]?.content?.parts[0]?.text || ''
 }
 
-// Natural Language Search with Gemini AI
+// Helper function to handle analytics queries
+async function handleAnalyticsQuery(parsedQuery: any, expenseList: any[], originalQuery: string) {
+  // Filter expenses by date if specified
+  let filteredExpenses = expenseList
+  const now = new Date()
+  
+  if (parsedQuery.dateFilter && parsedQuery.dateFilter !== 'null') {
+    filteredExpenses = expenseList.filter((exp: any) => {
+      const expDate = new Date(exp.createdAt)
+      
+      switch (parsedQuery.dateFilter) {
+        case 'last_week':
+          return expDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+        case 'last_month':
+          return expDate >= new Date(now.getFullYear(), now.getMonth() - 1, now.getDate())
+        case 'this_month':
+          return expDate.getMonth() === now.getMonth() && expDate.getFullYear() === now.getFullYear()
+        case 'this_year':
+          return expDate.getFullYear() === now.getFullYear()
+        default:
+          return true
+      }
+    })
+  }
+  
+  // Filter by category if specified
+  if (parsedQuery.category && parsedQuery.category !== 'null') {
+    filteredExpenses = filteredExpenses.filter((exp: any) => exp.category === parsedQuery.category)
+  }
+  
+  // Perform analysis based on type
+  let analysisResult: any = {}
+  
+  switch (parsedQuery.analysisType) {
+    case 'total':
+      const total = filteredExpenses.reduce((sum: number, exp: any) => sum + exp.amount, 0)
+      analysisResult = {
+        value: total,
+        count: filteredExpenses.length,
+        text: `You spent ৳${total.toFixed(2)} across ${filteredExpenses.length} expenses`
+      }
+      break
+      
+    case 'average':
+      const avg = filteredExpenses.length > 0 
+        ? filteredExpenses.reduce((sum: number, exp: any) => sum + exp.amount, 0) / filteredExpenses.length
+        : 0
+      analysisResult = {
+        value: avg,
+        count: filteredExpenses.length,
+        text: `Your average expense is ৳${avg.toFixed(2)} (based on ${filteredExpenses.length} expenses)`
+      }
+      break
+      
+    case 'breakdown':
+      const categoryBreakdown: any = {}
+      filteredExpenses.forEach((exp: any) => {
+        const cat = exp.category || 'other'
+        if (!categoryBreakdown[cat]) {
+          categoryBreakdown[cat] = { total: 0, count: 0 }
+        }
+        categoryBreakdown[cat].total += exp.amount
+        categoryBreakdown[cat].count += 1
+      })
+      
+      const sortedCategories = Object.entries(categoryBreakdown)
+        .sort(([, a]: any, [, b]: any) => b.total - a.total)
+      
+      const topCategory = sortedCategories[0]
+      analysisResult = {
+        breakdown: categoryBreakdown,
+        topCategory: topCategory ? topCategory[0] : 'none',
+        topAmount: topCategory ? (topCategory[1] as any).total : 0,
+        text: topCategory 
+          ? `Your top spending category is ${topCategory[0]} with ৳${(topCategory[1] as any).total.toFixed(2)}`
+          : 'No expenses found'
+      }
+      break
+      
+    case 'comparison':
+      if (parsedQuery.compareWith) {
+        const cat1Expenses = filteredExpenses.filter((exp: any) => exp.category === parsedQuery.category)
+        const cat2Expenses = filteredExpenses.filter((exp: any) => exp.category === parsedQuery.compareWith)
+        
+        const cat1Total = cat1Expenses.reduce((sum: number, exp: any) => sum + exp.amount, 0)
+        const cat2Total = cat2Expenses.reduce((sum: number, exp: any) => sum + exp.amount, 0)
+        
+        const difference = cat1Total - cat2Total
+        const percentage = cat2Total > 0 ? ((difference / cat2Total) * 100) : 0
+        
+        analysisResult = {
+          category1: { name: parsedQuery.category, total: cat1Total, count: cat1Expenses.length },
+          category2: { name: parsedQuery.compareWith, total: cat2Total, count: cat2Expenses.length },
+          difference: difference,
+          percentage: percentage,
+          text: difference > 0 
+            ? `You spent ৳${Math.abs(difference).toFixed(2)} more on ${parsedQuery.category} than ${parsedQuery.compareWith}`
+            : `You spent ৳${Math.abs(difference).toFixed(2)} less on ${parsedQuery.category} than ${parsedQuery.compareWith}`
+        }
+      }
+      break
+      
+    case 'trend':
+      // Group by month
+      const monthlyData: any = {}
+      filteredExpenses.forEach((exp: any) => {
+        const expDate = new Date(exp.createdAt)
+        const monthKey = `${expDate.getFullYear()}-${String(expDate.getMonth() + 1).padStart(2, '0')}`
+        if (!monthlyData[monthKey]) {
+          monthlyData[monthKey] = { total: 0, count: 0 }
+        }
+        monthlyData[monthKey].total += exp.amount
+        monthlyData[monthKey].count += 1
+      })
+      
+      const months = Object.keys(monthlyData).sort()
+      const trend = months.length >= 2 
+        ? monthlyData[months[months.length - 1]].total - monthlyData[months[months.length - 2]].total
+        : 0
+      
+      analysisResult = {
+        monthlyData: monthlyData,
+        trend: trend,
+        text: trend > 0 
+          ? `Your spending increased by ৳${trend.toFixed(2)} compared to previous month`
+          : trend < 0
+          ? `Your spending decreased by ৳${Math.abs(trend).toFixed(2)} compared to previous month`
+          : 'Your spending remained stable'
+      }
+      break
+  }
+  
+  return {
+    type: 'analytics',
+    data: analysisResult,
+    query: originalQuery,
+    explanation: parsedQuery.explanation,
+    expenses: filteredExpenses
+  }
+}
+
+// Enhanced Natural Language Search & Analytics with Gemini AI
 app.get('/make-server-f573a585/search', requireAuth, async (c) => {
   try {
     const userId = c.get('userId')
     const query = c.req.query('q') || ''
     
     if (!query.trim()) {
-      return c.json([])
+      return c.json({ type: 'results', data: [] })
     }
     
     const expenses = await kv.get(`user:${userId}:personal_expenses`)
     const expenseList = expenses.value || []
     
-    // Use Gemini AI to parse the natural language query
-    const systemInstruction = `You are a financial assistant that parses natural language expense queries.
-Available categories: food, groceries, transport, entertainment, utilities, shopping, health, education, other.
-Parse the query and return a JSON object with filters. Include only filters that are explicitly mentioned.
+    // Enhanced system instruction for AI
+    const systemInstruction = `You are an intelligent financial assistant analyzing user expenses.
 
-Return JSON in this exact format:
+Available categories: food, groceries, transport, entertainment, utilities, shopping, health, education, other.
+
+You can handle two types of queries:
+
+1. SEARCH QUERIES - Filter and return matching expenses:
+   - "show coffee expenses"
+   - "groceries last week"
+   - "food over ৳500"
+
+2. ANALYTICAL QUERIES - Calculate and analyze data:
+   - "how much did I spend on food?"
+   - "total spending last month?"
+   - "compare food vs transport spending"
+   - "what's my average daily spending?"
+   - "which category do I spend most on?"
+
+Determine the query type and respond accordingly.
+
+For SEARCH queries, return:
 {
+  "type": "search",
   "keywords": ["word1", "word2"],
   "category": "category_name or null",
   "dateFilter": "last_week|last_month|this_month|this_year|null",
   "minAmount": number or null,
   "maxAmount": number or null,
-  "explanation": "brief explanation of what you understood"
+  "explanation": "what you understood"
+}
+
+For ANALYTICAL queries, return:
+{
+  "type": "analytics",
+  "analysisType": "total|average|comparison|breakdown|trend",
+  "category": "category or null",
+  "dateFilter": "last_week|last_month|this_month|this_year|null",
+  "compareWith": "category to compare or null",
+  "metric": "amount|count|average|percentage",
+  "explanation": "what analysis to perform"
 }`
 
-    const prompt = `Parse this expense search query: "${query}"\n\nReturn only valid JSON, no markdown.`
+    const prompt = `User query: "${query}"\n\nAnalyze and return appropriate JSON response. No markdown formatting.`
     
-    let filters: any = {}
+    let parsedQuery: any = {}
     try {
       const aiResponse = await callGeminiAPI(prompt, systemInstruction)
-      // Remove markdown code blocks if present
       const cleanResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-      filters = JSON.parse(cleanResponse)
-      console.log('Gemini parsed filters:', filters)
+      parsedQuery = JSON.parse(cleanResponse)
+      console.log('Gemini parsed query:', parsedQuery)
     } catch (aiError) {
       console.log('AI parsing failed, using fallback:', aiError)
-      // Fallback to simple keyword search
-      filters = { keywords: [query.toLowerCase()] }
+      parsedQuery = { type: 'search', keywords: [query.toLowerCase()] }
     }
     
-    // Apply AI-parsed filters to expenses
+    // Handle analytics queries
+    if (parsedQuery.type === 'analytics') {
+      return await handleAnalyticsQuery(parsedQuery, expenseList, query)
+    }
+    
+    // Handle search queries - filter expenses
     const results = expenseList.filter((exp: any) => {
-      // Check keywords
-      if (filters.keywords && filters.keywords.length > 0) {
+      if (parsedQuery.keywords && parsedQuery.keywords.length > 0) {
         const searchText = `${exp.description} ${exp.category} ${exp.notes || ''}`.toLowerCase()
-        const matchesKeywords = filters.keywords.some((keyword: string) => 
+        const matchesKeywords = parsedQuery.keywords.some((keyword: string) => 
           searchText.includes(keyword.toLowerCase())
         )
         if (!matchesKeywords) return false
       }
       
-      // Check category
-      if (filters.category && filters.category !== 'null') {
-        if (exp.category !== filters.category) return false
+      if (parsedQuery.category && parsedQuery.category !== 'null') {
+        if (exp.category !== parsedQuery.category) return false
       }
       
-      // Check amount range
-      if (filters.minAmount !== null && exp.amount < filters.minAmount) return false
-      if (filters.maxAmount !== null && exp.amount > filters.maxAmount) return false
+      if (parsedQuery.minAmount !== null && exp.amount < parsedQuery.minAmount) return false
+      if (parsedQuery.maxAmount !== null && exp.amount > parsedQuery.maxAmount) return false
       
-      // Check date filter
-      if (filters.dateFilter && filters.dateFilter !== 'null') {
+      if (parsedQuery.dateFilter && parsedQuery.dateFilter !== 'null') {
         const expDate = new Date(exp.createdAt)
         const now = new Date()
         
-        switch (filters.dateFilter) {
+        switch (parsedQuery.dateFilter) {
           case 'last_week':
             const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
             if (expDate < lastWeek) return false
@@ -1506,7 +1674,11 @@ Return JSON in this exact format:
       return true
     })
     
-    return c.json(results)
+    return c.json({ 
+      type: 'results', 
+      data: results,
+      explanation: parsedQuery.explanation 
+    })
   } catch (error) {
     console.log('Error searching expenses:', error)
     return c.json({ error: 'Failed to search expenses' }, 500)
@@ -1527,24 +1699,48 @@ app.post('/make-server-f573a585/scan-receipt', requireAuth, async (c) => {
     // Remove data URL prefix if present
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '')
     
-    // Use Gemini Vision to analyze the receipt
-    const prompt = `Analyze this receipt image and extract the following information in JSON format:
+    // Enhanced receipt analysis prompt
+    const prompt = `Analyze this receipt/bill image in detail and extract ALL information in JSON format.
+
+Required JSON structure:
 {
-  "merchant": "merchant/store name",
-  "amount": total_amount_as_number,
-  "date": "date in YYYY-MM-DD format if visible, otherwise null",
-  "items": ["item1", "item2"],
+  "merchant": "exact store/restaurant name",
+  "amount": total_amount_as_number (FINAL TOTAL only),
+  "subtotal": subtotal_before_tax_and_tips,
+  "tax": tax_amount,
+  "tip": tip_amount,
+  "date": "YYYY-MM-DD format or null",
+  "time": "HH:MM format or null",
+  "items": [
+    {"name": "item name", "quantity": number, "price": price_per_unit, "total": item_total}
+  ],
+  "paymentMethod": "cash|card|upi|mobile|null",
   "category": "one of: food, groceries, transport, entertainment, utilities, shopping, health, education, other",
-  "currency": "currency symbol or code if visible",
-  "notes": "any additional relevant information"
+  "currency": "৳|$|€|£ or currency code",
+  "receiptNumber": "receipt/invoice number if visible",
+  "merchantAddress": "address if visible",
+  "merchantPhone": "phone if visible",
+  "confidence": "high|medium|low - your confidence in the extraction",
+  "notes": "any special observations like discounts, offers, etc"
 }
 
-Guidelines:
-- Extract the TOTAL amount (not individual items)
-- Suggest the most appropriate category based on the merchant and items
-- If you see multiple amounts, use the final total
-- For Bangladeshi receipts, amounts might be in Taka (৳)
-- Return only valid JSON, no markdown or extra text`
+CRITICAL RULES:
+1. Amount must be the FINAL TOTAL (after tax, tip, everything)
+2. If you see "Total", "Grand Total", "Amount to Pay" - use that
+3. Don't use subtotals, don't use individual items
+4. For currency: Bangladeshi Taka (৳), Indian Rupee (₹), Dollar ($), etc
+5. Category must match merchant type:
+   - Restaurants/cafes → food
+   - Supermarkets/shops → groceries
+   - Uber/taxi/gas → transport
+   - Movies/events → entertainment
+   - Electric/water → utilities
+   - Clothing/electronics → shopping
+   - Medicine/clinic → health
+   - Books/courses → education
+6. Extract ALL items with their individual prices
+7. Look for tax, service charge, tips separately
+8. Return ONLY valid JSON, no markdown, no explanation`
 
     const aiResponse = await callGeminiVisionAPI(base64Data, prompt)
     console.log('Gemini Vision response:', aiResponse)
@@ -1553,17 +1749,38 @@ Guidelines:
     const cleanResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
     const scannedData = JSON.parse(cleanResponse)
     
-    // Create a description from merchant name
+    // Validate and build response
     const description = scannedData.merchant || 'Receipt scan'
+    const itemsText = scannedData.items && scannedData.items.length > 0
+      ? scannedData.items.map((item: any) => `${item.name} (৳${item.total || item.price})`).join(', ')
+      : 'No items detected'
     
-    // Return the structured data
+    const notesText = [
+      scannedData.notes,
+      scannedData.receiptNumber ? `Receipt #${scannedData.receiptNumber}` : '',
+      scannedData.paymentMethod ? `Paid via ${scannedData.paymentMethod}` : '',
+      scannedData.tax ? `Tax: ৳${scannedData.tax}` : '',
+      scannedData.tip ? `Tip: ৳${scannedData.tip}` : ''
+    ].filter(Boolean).join(' | ')
+    
+    // Return enhanced structured data
     return c.json({
       description: description,
       amount: scannedData.amount || 0,
       category: scannedData.category || 'other',
-      notes: scannedData.notes || `Items: ${scannedData.items?.join(', ') || 'N/A'}`,
+      notes: `${itemsText}\n${notesText}`,
       date: scannedData.date,
-      rawData: scannedData
+      confidence: scannedData.confidence || 'medium',
+      rawData: scannedData,
+      itemBreakdown: scannedData.items || [],
+      subtotal: scannedData.subtotal,
+      tax: scannedData.tax,
+      tip: scannedData.tip,
+      merchantInfo: {
+        name: scannedData.merchant,
+        address: scannedData.merchantAddress,
+        phone: scannedData.merchantPhone
+      }
     })
   } catch (error) {
     console.log('Error scanning receipt:', error)
@@ -1571,6 +1788,116 @@ Guidelines:
       error: 'Failed to scan receipt',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, 500)
+  }
+})
+
+// AI-Powered Spending Insights
+app.get('/make-server-f573a585/ai/insights', requireAuth, async (c) => {
+  try {
+    const userId = c.get('userId')
+    const expenses = await kv.get(`user:${userId}:personal_expenses`)
+    const budgets = await kv.get(`user:${userId}:budgets`)
+    const expenseList = expenses.value || []
+    const budgetList = budgets.value || []
+    
+    if (expenseList.length === 0) {
+      return c.json({
+        insights: [],
+        summary: 'No expenses yet. Start tracking to get personalized insights!',
+        recommendations: []
+      })
+    }
+    
+    // Calculate statistics
+    const now = new Date()
+    const thisMonth = expenseList.filter((exp: any) => {
+      const expDate = new Date(exp.createdAt)
+      return expDate.getMonth() === now.getMonth() && expDate.getFullYear() === now.getFullYear()
+    })
+    
+    const lastMonth = expenseList.filter((exp: any) => {
+      const expDate = new Date(exp.createdAt)
+      const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+      return expDate.getMonth() === lastMonthDate.getMonth() && expDate.getFullYear() === lastMonthDate.getFullYear()
+    })
+    
+    const categoryTotals: any = {}
+    thisMonth.forEach((exp: any) => {
+      const cat = exp.category || 'other'
+      categoryTotals[cat] = (categoryTotals[cat] || 0) + exp.amount
+    })
+    
+    const totalThisMonth = thisMonth.reduce((sum: number, exp: any) => sum + exp.amount, 0)
+    const totalLastMonth = lastMonth.reduce((sum: number, exp: any) => sum + exp.amount, 0)
+    const avgExpense = thisMonth.length > 0 ? totalThisMonth / thisMonth.length : 0
+    
+    // Build context for AI
+    const context = `User's Expense Data:
+- Total expenses this month: ৳${totalThisMonth.toFixed(2)} (${thisMonth.length} expenses)
+- Total last month: ৳${totalLastMonth.toFixed(2)} (${lastMonth.length} expenses)
+- Average expense: ৳${avgExpense.toFixed(2)}
+- Category breakdown: ${JSON.stringify(categoryTotals)}
+- Active budgets: ${budgetList.map((b: any) => `${b.category}: ৳${b.limit}`).join(', ')}
+
+Top 5 Recent Expenses:
+${expenseList.slice(0, 5).map((exp: any) => `- ${exp.description} (${exp.category}): ৳${exp.amount}`).join('\n')}`
+
+    const systemInstruction = `You are a personal finance advisor analyzing a user's spending patterns. 
+Provide actionable insights and recommendations in JSON format.
+
+Return this structure:
+{
+  "insights": [
+    {"type": "spending_trend", "severity": "info|warning|alert", "message": "insight text", "value": number},
+    {"type": "category_alert", "severity": "info|warning|alert", "message": "insight text", "category": "category_name"},
+    {"type": "budget_status", "severity": "info|warning|alert", "message": "insight text", "percentage": number}
+  ],
+  "summary": "brief overall summary (2-3 sentences)",
+  "recommendations": [
+    {"priority": "high|medium|low", "action": "specific recommendation", "potential_savings": number}
+  ],
+  "patterns": [
+    {"pattern": "pattern description", "suggestion": "what to do about it"}
+  ],
+  "predictions": {
+    "month_end_total": estimated_total,
+    "confidence": "high|medium|low",
+    "reasoning": "why this prediction"
+  }
+}
+
+Focus on:
+1. Spending trends (increasing/decreasing)
+2. Budget overspending warnings
+3. Unusual expenses or patterns
+4. Category-specific insights
+5. Savings opportunities
+6. Comparison with previous month
+7. Predictions for month-end
+
+Be specific, actionable, and supportive. Use Bangladeshi Taka (৳) for amounts.`
+
+    const prompt = `Analyze this user's spending and provide insights:\n\n${context}\n\nReturn JSON only, no markdown.`
+    
+    const aiResponse = await callGeminiAPI(prompt, systemInstruction)
+    const cleanResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    const insights = JSON.parse(cleanResponse)
+    
+    console.log('AI Insights generated:', insights)
+    
+    return c.json({
+      ...insights,
+      generatedAt: new Date().toISOString(),
+      stats: {
+        thisMonth: totalThisMonth,
+        lastMonth: totalLastMonth,
+        change: totalThisMonth - totalLastMonth,
+        changePercentage: totalLastMonth > 0 ? ((totalThisMonth - totalLastMonth) / totalLastMonth * 100) : 0
+      }
+    })
+  } catch (error) {
+    console.log('Error generating insights:', error)
+    return c.json({ error: 'Failed to generate insights' }, 500)
   }
 })
 

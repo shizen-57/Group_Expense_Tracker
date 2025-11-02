@@ -108,19 +108,26 @@ export function usePersonalExpenses(accessToken: string | null) {
   const searchExpenses = async (query: string) => {
     if (!accessToken || !query) {
       setSearchResults([])
-      return []
+      return { type: 'results', data: [] }
     }
 
     try {
       const results = await api.searchExpenses(accessToken, query)
+      // Handle both new format and legacy array format
+      if (results.type === 'analytics' || results.type === 'results') {
+        const resultArray = results.type === 'results' ? results.data : []
+        setSearchResults(resultArray)
+        return results
+      }
+      // Legacy array format
       const resultArray = Array.isArray(results) ? results : []
       setSearchResults(resultArray)
-      return resultArray
+      return { type: 'results', data: resultArray }
     } catch (error) {
       console.error('Failed to search expenses:', error)
       toast.error('Search failed')
       setSearchResults([])
-      return []
+      return { type: 'results', data: [] }
     }
   }
 
@@ -160,6 +167,19 @@ export function usePersonalExpenses(accessToken: string | null) {
     }
   }
 
+  const getAIInsights = async () => {
+    if (!accessToken) return null
+
+    try {
+      const insights = await api.getAIInsights(accessToken)
+      return insights
+    } catch (error) {
+      console.error('Failed to get AI insights:', error)
+      toast.error('Failed to generate insights')
+      throw error
+    }
+  }
+
   return {
     expenses,
     budgets,
@@ -175,5 +195,6 @@ export function usePersonalExpenses(accessToken: string | null) {
     searchExpenses,
     fetchTrends,
     scanReceipt,
+    getAIInsights,
   }
 }

@@ -141,6 +141,7 @@ export default function App() {
             onDeleteBudget={personalExpenses.deleteBudget}
             onSearch={personalExpenses.searchExpenses}
             onScanReceipt={personalExpenses.scanReceipt}
+            onGetAIInsights={personalExpenses.getAIInsights}
           />
         )}
 

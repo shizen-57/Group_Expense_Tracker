@@ -10,8 +10,9 @@ interface ExpensesPageProps {
   onDeleteExpense: (id: string) => void
   onCreateBudget: (data: any) => Promise<any>
   onDeleteBudget: (id: string) => void
-  onSearch: (query: string) => Promise<any[]>
+  onSearch: (query: string) => Promise<any>
   onScanReceipt: (file: File) => Promise<any>
+  onGetAIInsights?: () => Promise<any>
 }
 
 export function ExpensesPage(props: ExpensesPageProps) {

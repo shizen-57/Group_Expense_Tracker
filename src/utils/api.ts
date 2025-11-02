@@ -411,7 +411,7 @@ export const api = {
     return res.json()
   },
 
-  // Search
+  // Enhanced Search with Analytics
   async searchExpenses(token: string, query: string) {
     const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`, {
       headers: {
@@ -423,7 +423,26 @@ export const api = {
       console.error('Error searching expenses:', data.error)
       throw new Error(data.error)
     }
-    return Array.isArray(data) ? data : []
+    // Handle both old array format and new object format
+    if (Array.isArray(data)) {
+      return { type: 'results', data: data }
+    }
+    return data
+  },
+
+  // AI Spending Insights
+  async getAIInsights(token: string) {
+    const res = await fetch(`${API_BASE}/ai/insights`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    const data = await res.json()
+    if (data.error) {
+      console.error('Error fetching AI insights:', data.error)
+      throw new Error(data.error)
+    }
+    return data
   },
 
   // Analytics
