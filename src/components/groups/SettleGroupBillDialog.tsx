@@ -95,7 +95,7 @@ export function SettleGroupBillDialog({
           <Alert className="border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20">
             <TrendingUp className="h-4 w-4 text-emerald-600" />
             <AlertDescription className="text-emerald-900 dark:text-emerald-100">
-              <strong>Total Group Bill:</strong> ${totalBill.toFixed(2)}
+              <strong>Total Group Bill:</strong> ৳{totalBill.toFixed(2)}
             </AlertDescription>
           </Alert>
 
@@ -121,7 +121,7 @@ export function SettleGroupBillDialog({
                     </p>
                   </div>
                   <p className="font-semibold text-emerald-600 dark:text-emerald-400">
-                    ${total.toFixed(2)}
+                    ৳{total.toFixed(2)}
                   </p>
                 </div>
               </div>
@@ -131,7 +131,7 @@ export function SettleGroupBillDialog({
           <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-900/20">
             <CheckCircle className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-blue-900 dark:text-blue-100 text-sm">
-              When you settle, your {myExpenses.length} expense{myExpenses.length !== 1 ? 's' : ''} (${myTotal.toFixed(2)}) will be added to your personal expense tracker for analysis and budgeting.
+              When you settle, your {myExpenses.length} expense{myExpenses.length !== 1 ? 's' : ''} (৳{myTotal.toFixed(2)}) will be added to your personal expense tracker for analysis and budgeting.
             </AlertDescription>
           </Alert>
 

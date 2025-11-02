@@ -129,7 +129,7 @@ export function NaturalLanguageSearch({ onSearch }: NaturalLanguageSearchProps) 
                         </div>
                         <div className="text-right">
                           <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
-                            ${expense.amount.toFixed(2)}
+                            ৳{expense.amount.toFixed(2)}
                           </p>
                           <span className={`text-xs px-2 py-1 rounded-full ${categoryInfo.bgColor} ${categoryInfo.color}`}>
                             {categoryInfo.label}

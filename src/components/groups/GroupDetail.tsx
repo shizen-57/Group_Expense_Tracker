@@ -170,7 +170,7 @@ export function GroupDetail({
               <span className="text-sm">
                 {debtor} owes {creditor}
               </span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">${(amount as number).toFixed(2)}</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">৳{(amount as number).toFixed(2)}</span>
             </div>
           )
         })}
@@ -261,7 +261,7 @@ export function GroupDetail({
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Total Group Bill</p>
                 <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
-                  ${totalBill.toFixed(2)}
+                  ৳{totalBill.toFixed(2)}
                 </p>
               </div>
               <div className="p-4 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600">
@@ -426,14 +426,14 @@ export function GroupDetail({
                               {expense.splitWith.map(memberId => (
                                 <div key={memberId} className="flex justify-between">
                                   <span>{getMemberName(memberId)}</span>
-                                  <span>${(expense.splitAmounts![memberId] || 0).toFixed(2)}</span>
+                                  <span>৳{(expense.splitAmounts![memberId] || 0).toFixed(2)}</span>
                                 </div>
                               ))}
                             </div>
                           </div>
                         )}
                       </div>
-                      <p className="text-emerald-600 dark:text-emerald-400 font-semibold text-lg">${expense.amount.toFixed(2)}</p>
+                      <p className="text-emerald-600 dark:text-emerald-400 font-semibold text-lg">৳{expense.amount.toFixed(2)}</p>
                     </div>
                     <div className="text-sm text-muted-foreground">
                       <span className={`px-2 py-0.5 rounded text-xs ${categoryInfo.bgColor} ${categoryInfo.color}`}>

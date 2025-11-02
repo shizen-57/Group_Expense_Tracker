@@ -52,8 +52,13 @@ export function useAuth() {
       console.log('Login response:', response)
       
       if (response.error) {
-        toast.error(response.error)
-        throw new Error(response.error)
+        // Provide more helpful error messages
+        let errorMessage = response.error
+        if (response.error.toLowerCase().includes('invalid login credentials')) {
+          errorMessage = 'Invalid email or password. If you don\'t have an account, please sign up first.'
+        }
+        toast.error(errorMessage)
+        throw new Error(errorMessage)
       }
 
       if (!response.accessToken) {
@@ -90,7 +95,10 @@ export function useAuth() {
         throw new Error(response.error)
       }
 
-      toast.success('Account created! Please sign in.')
+      toast.success('Account created successfully!')
+      
+      // Automatically log in after successful signup
+      await handleLogin(data.email, data.password)
       return true
     } catch (error) {
       console.error('Signup error:', error)

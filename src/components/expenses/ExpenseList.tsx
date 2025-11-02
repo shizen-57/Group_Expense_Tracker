@@ -85,7 +85,7 @@ export function ExpenseList({ expenses, onDelete }: ExpenseListProps) {
                 <div className="flex items-center gap-4">
                   <div className="text-right">
                     <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
-                      ${expense.amount.toFixed(2)}
+                      ৳{expense.amount.toFixed(2)}
                     </p>
                   </div>
                   <AlertDialog>

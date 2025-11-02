@@ -91,7 +91,7 @@ export function MonthlySpendingSummary({ expenses, budgets, stats }: MonthlySpen
         </CardHeader>
         <CardContent className="relative z-10">
           <p className="text-5xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">
-            ${monthlyTotal.toFixed(2)}
+            ৳{monthlyTotal.toFixed(2)}
           </p>
           <div className="flex items-center gap-2 text-sm">
             {percentageChange !== 0 && (
@@ -148,14 +148,14 @@ export function MonthlySpendingSummary({ expenses, budgets, stats }: MonthlySpen
               <div className="mb-4">
                 <div className="flex justify-between text-sm mb-2">
                   <span>{budgetPercentage.toFixed(0)}% used</span>
-                  <span className="font-medium">${monthlyTotal.toFixed(2)} / ${totalBudget.toFixed(2)}</span>
+                  <span className="font-medium">৳{monthlyTotal.toFixed(2)} / ৳{totalBudget.toFixed(2)}</span>
                 </div>
                 <Progress value={Math.min(budgetPercentage, 100)} className="h-3" />
               </div>
               {isOverBudget && (
                 <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
                   <AlertTriangle className="h-4 w-4" />
-                  <span>Over budget by ${(monthlyTotal - totalBudget).toFixed(2)}</span>
+                  <span>Over budget by ৳{(monthlyTotal - totalBudget).toFixed(2)}</span>
                 </div>
               )}
               {isNearBudget && (
@@ -166,7 +166,7 @@ export function MonthlySpendingSummary({ expenses, budgets, stats }: MonthlySpen
               )}
               {!isOverBudget && !isNearBudget && (
                 <p className="text-sm text-muted-foreground">
-                  ${(totalBudget - monthlyTotal).toFixed(2)} remaining
+                  ৳{(totalBudget - monthlyTotal).toFixed(2)} remaining
                 </p>
               )}
             </>
@@ -206,7 +206,7 @@ export function MonthlySpendingSummary({ expenses, budgets, stats }: MonthlySpen
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value: any) => `$${value.toFixed(2)}`} />
+                  <Tooltip formatter={(value: any) => `৳${value.toFixed(2)}`} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="space-y-2 mt-4">
@@ -219,7 +219,7 @@ export function MonthlySpendingSummary({ expenses, budgets, stats }: MonthlySpen
                       />
                       <span>{item.name}</span>
                     </div>
-                    <span className="font-medium">${item.value.toFixed(2)}</span>
+                    <span className="font-medium">৳{item.value.toFixed(2)}</span>
                   </div>
                 ))}
               </div>

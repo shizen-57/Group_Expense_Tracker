@@ -78,7 +78,7 @@ export function ActivityList({ activities, onGroupClick }: ActivityListProps) {
                 </div>
               </div>
               <div className="text-right ml-4">
-                <p className="text-green-600">${activity.amount.toFixed(2)}</p>
+                <p className="text-green-600">৳{activity.amount.toFixed(2)}</p>
               </div>
             </div>
           </CardContent>

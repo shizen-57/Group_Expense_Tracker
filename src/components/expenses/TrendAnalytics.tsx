@@ -145,13 +145,13 @@ export function TrendAnalytics({ trends, expenses }: TrendAnalyticsProps) {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
-              <Tooltip formatter={(value: any) => `$${value.toFixed(2)}`} />
+              <Tooltip formatter={(value: any) => `৳${value.toFixed(2)}`} />
               <Area type="monotone" dataKey="total" stroke="#10b981" fillOpacity={1} fill="url(#colorTotal)" />
             </AreaChart>
           </ResponsiveContainer>
           <div className="mt-4 text-center">
             <p className="text-sm text-muted-foreground">
-              Total: ${monthlyData.reduce((sum, m) => sum + m.total, 0).toFixed(2)} over {monthlyData.length} months
+              Total: ৳{monthlyData.reduce((sum, m) => sum + m.total, 0).toFixed(2)} over {monthlyData.length} months
             </p>
           </div>
         </CardContent>
@@ -173,7 +173,7 @@ export function TrendAnalytics({ trends, expenses }: TrendAnalyticsProps) {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" tick={{ fontSize: 10 }} />
               <YAxis />
-              <Tooltip formatter={(value: any) => `$${value.toFixed(2)}`} />
+              <Tooltip formatter={(value: any) => `৳${value.toFixed(2)}`} />
               <Bar dataKey="amount" fill="#3b82f6" />
             </BarChart>
           </ResponsiveContainer>

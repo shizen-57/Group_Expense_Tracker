@@ -113,7 +113,7 @@ export function EnhancedAddExpenseDialog({ members, currentUserId, onAddExpense 
 
     if (splitType === 'unequal') {
       if (Math.abs(totalSplit - totalAmount) > 0.01) {
-        return `Split amounts ($${totalSplit.toFixed(2)}) don't match total amount ($${totalAmount.toFixed(2)})`
+        return `Split amounts (৳${totalSplit.toFixed(2)}) don't match total amount (৳${totalAmount.toFixed(2)})`
       }
     }
 
@@ -193,7 +193,7 @@ export function EnhancedAddExpenseDialog({ members, currentUserId, onAddExpense 
             return (
               <div key={memberId} className="flex justify-between text-sm">
                 <span>{member?.name}</span>
-                <span className="font-medium">${memberAmount.toFixed(2)}</span>
+                <span className="font-medium">৳{memberAmount.toFixed(2)}</span>
               </div>
             )
           })}
@@ -323,7 +323,7 @@ export function EnhancedAddExpenseDialog({ members, currentUserId, onAddExpense 
               </TabsContent>
 
               <TabsContent value="unequal" className="space-y-2 mt-4">
-                <Label>Custom Amounts (Must total ${amount || '0.00'})</Label>
+                <Label>Custom Amounts (Must total ৳{amount || '0.00'})</Label>
                 <div className="space-y-2 max-h-60 overflow-y-auto border rounded-lg p-3">
                   {members.map((member) => (
                     <div key={member.id} className="flex items-center gap-2">

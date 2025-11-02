@@ -61,11 +61,11 @@ export function SettleDebtDialog({ friend, onSettle }: SettleDebtDialogProps) {
           <div className="p-4 bg-gray-50 rounded-lg">
             {isOwing ? (
               <p className="text-sm">
-                You owe <span className="text-red-600">${Math.abs(friend.balance).toFixed(2)}</span>
+                You owe <span className="text-red-600">৳{Math.abs(friend.balance).toFixed(2)}</span>
               </p>
             ) : (
               <p className="text-sm">
-                {friend.name} owes you <span className="text-green-600">${Math.abs(friend.balance).toFixed(2)}</span>
+                {friend.name} owes you <span className="text-green-600">৳{Math.abs(friend.balance).toFixed(2)}</span>
               </p>
             )}
           </div>

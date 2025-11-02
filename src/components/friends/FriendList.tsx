@@ -37,7 +37,7 @@ export function FriendList({ friends, onSettle }: FriendListProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">You Owe</p>
-                <p className="text-red-600 text-2xl">${totalOwed.toFixed(2)}</p>
+                <p className="text-red-600 text-2xl">৳{totalOwed.toFixed(2)}</p>
               </div>
               <DollarSign className="h-8 w-8 text-red-600 opacity-50" />
             </div>
@@ -49,7 +49,7 @@ export function FriendList({ friends, onSettle }: FriendListProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Owe You</p>
-                <p className="text-green-600 text-2xl">${totalReceiving.toFixed(2)}</p>
+                <p className="text-green-600 text-2xl">৳{totalReceiving.toFixed(2)}</p>
               </div>
               <DollarSign className="h-8 w-8 text-green-600 opacity-50" />
             </div>
@@ -74,11 +74,11 @@ export function FriendList({ friends, onSettle }: FriendListProps) {
                   <div className="text-right">
                     {friend.balance > 0 ? (
                       <p className="text-green-600">
-                        Owes you ${Math.abs(friend.balance).toFixed(2)}
+                        Owes you ৳{Math.abs(friend.balance).toFixed(2)}
                       </p>
                     ) : (
                       <p className="text-red-600">
-                        You owe ${Math.abs(friend.balance).toFixed(2)}
+                        You owe ৳{Math.abs(friend.balance).toFixed(2)}
                       </p>
                     )}
                   </div>

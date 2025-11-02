@@ -136,7 +136,7 @@ export function BudgetManager({ budgets, expenses, onCreateBudget, onDeleteBudge
                       <div>
                         <p className="font-semibold text-lg">{categoryInfo.label}</p>
                         <p className="text-sm text-muted-foreground">
-                          ${spent.toFixed(2)} / ${budget.limit.toFixed(2)}
+                          ৳{spent.toFixed(2)} / ৳{budget.limit.toFixed(2)}
                         </p>
                       </div>
                     </div>
@@ -174,7 +174,7 @@ export function BudgetManager({ budgets, expenses, onCreateBudget, onDeleteBudge
                     />
                     <div className="flex justify-between text-sm text-muted-foreground">
                       <span>{percentage.toFixed(0)}% used</span>
-                      <span>${Math.max(budget.limit - spent, 0).toFixed(2)} remaining</span>
+                      <span>৳{Math.max(budget.limit - spent, 0).toFixed(2)} remaining</span>
                     </div>
                   </div>
                 </CardContent>

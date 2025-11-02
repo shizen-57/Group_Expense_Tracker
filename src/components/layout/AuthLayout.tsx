@@ -2,17 +2,19 @@ import { motion, AnimatePresence } from 'motion/react'
 import { Loader2, Sparkles } from 'lucide-react'
 import { LoginForm } from '../auth/LoginForm'
 import { SignupForm } from '../auth/SignupForm'
+import { ForgotPasswordForm } from '../auth/ForgotPasswordForm'
 import { Toaster } from '../ui/sonner'
 
 interface AuthLayoutProps {
-  authMode: 'login' | 'signup'
+  authMode: 'login' | 'signup' | 'forgot-password'
   isAuthenticating: boolean
   onLogin: (email: string, password: string) => Promise<void>
   onSignup: (data: { name: string; email: string; password: string; phone: string; username: string }) => Promise<void>
-  onSwitchMode: () => void
+  onResetPassword: (email: string) => Promise<void>
+  onSwitchMode: (mode: 'login' | 'signup' | 'forgot-password') => void
 }
 
-export function AuthLayout({ authMode, isAuthenticating, onLogin, onSignup, onSwitchMode }: AuthLayoutProps) {
+export function AuthLayout({ authMode, isAuthenticating, onLogin, onSignup, onResetPassword, onSwitchMode }: AuthLayoutProps) {
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
       {/* Animated gradient background */}
@@ -37,7 +39,7 @@ export function AuthLayout({ authMode, isAuthenticating, onLogin, onSignup, onSw
                 <Loader2 className="w-12 h-12 animate-spin text-white" />
               </div>
               <p className="text-lg font-medium">
-                {authMode === 'login' ? 'Signing in...' : 'Creating your account...'}
+                {authMode === 'login' ? 'Signing in...' : authMode === 'signup' ? 'Creating your account...' : 'Sending reset email...'}
               </p>
               <p className="text-sm text-muted-foreground mt-2">Please wait a moment</p>
             </motion.div>
@@ -52,12 +54,18 @@ export function AuthLayout({ authMode, isAuthenticating, onLogin, onSignup, onSw
               {authMode === 'login' ? (
                 <LoginForm
                   onLogin={onLogin}
-                  onSwitchToSignup={onSwitchMode}
+                  onSwitchToSignup={() => onSwitchMode('signup')}
+                  onForgotPassword={() => onSwitchMode('forgot-password')}
                 />
-              ) : (
+              ) : authMode === 'signup' ? (
                 <SignupForm
                   onSignup={onSignup}
-                  onSwitchToLogin={onSwitchMode}
+                  onSwitchToLogin={() => onSwitchMode('login')}
+                />
+              ) : (
+                <ForgotPasswordForm
+                  onResetPassword={onResetPassword}
+                  onBack={() => onSwitchMode('login')}
                 />
               )}
             </motion.div>
@@ -74,7 +82,7 @@ export function AuthLayout({ authMode, isAuthenticating, onLogin, onSignup, onSw
       >
         <p className="text-sm text-muted-foreground flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-emerald-500" />
-          <span className="gradient-text font-semibold">SplitWise</span> - Making expense splitting simple
+          <span className="gradient-text font-semibold">SplitWise</span> - Your smart personal expense manager
         </p>
       </motion.div>
       

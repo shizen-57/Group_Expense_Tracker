@@ -16,7 +16,7 @@ export function BalanceSummary({ totalBalance, totalOwed, totalReceiving }: Bala
             <div>
               <p className="text-sm text-gray-500">Total Balance</p>
               <p className={`text-2xl ${totalBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ${Math.abs(totalBalance).toFixed(2)}
+                ৳{Math.abs(totalBalance).toFixed(2)}
               </p>
               <p className="text-xs text-gray-400 mt-1">
                 {totalBalance >= 0 ? 'Net receiving' : 'Net owing'}
@@ -32,7 +32,7 @@ export function BalanceSummary({ totalBalance, totalOwed, totalReceiving }: Bala
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">You Owe</p>
-              <p className="text-red-600 text-2xl">${totalOwed.toFixed(2)}</p>
+              <p className="text-red-600 text-2xl">৳{totalOwed.toFixed(2)}</p>
               <p className="text-xs text-gray-400 mt-1">
                 Total debts
               </p>
@@ -47,7 +47,7 @@ export function BalanceSummary({ totalBalance, totalOwed, totalReceiving }: Bala
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Owe You</p>
-              <p className="text-green-600 text-2xl">${totalReceiving.toFixed(2)}</p>
+              <p className="text-green-600 text-2xl">৳{totalReceiving.toFixed(2)}</p>
               <p className="text-xs text-gray-400 mt-1">
                 Total credits
               </p>

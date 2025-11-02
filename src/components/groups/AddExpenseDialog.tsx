@@ -174,7 +174,7 @@ export function AddExpenseDialog({ members, currentUserId, onAddExpense }: AddEx
             </div>
             {splitWith.length > 0 && (
               <p className="text-sm text-gray-500">
-                ${amount ? (parseFloat(amount) / splitWith.length).toFixed(2) : '0.00'} per person
+                ৳{amount ? (parseFloat(amount) / splitWith.length).toFixed(2) : '0.00'} per person
               </p>
             )}
           </div>

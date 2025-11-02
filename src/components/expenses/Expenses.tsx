@@ -48,7 +48,7 @@ export function Expenses({
     const rows = expensesArray.map(exp => [
       new Date(exp.createdAt).toLocaleDateString(),
       exp.description,
-      `$${exp.amount.toFixed(2)}`,
+      `৳${exp.amount.toFixed(2)}`,
       exp.category,
       exp.notes || ''
     ])

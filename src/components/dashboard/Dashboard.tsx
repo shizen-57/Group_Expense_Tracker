@@ -36,7 +36,7 @@ export function Dashboard({ stats, onNavigate }: DashboardProps) {
   const quickStats = [
     {
       title: 'This Month',
-      value: `$${(safeStats.monthlyTotal || 0).toFixed(2)}`,
+      value: `৳${(safeStats.monthlyTotal || 0).toFixed(2)}`,
       subtitle: `${safeStats.monthlyExpensesCount || 0} expenses`,
       icon: DollarSign,
       color: 'text-emerald-600',
@@ -52,7 +52,7 @@ export function Dashboard({ stats, onNavigate }: DashboardProps) {
     },
     {
       title: 'Group Balance',
-      value: `$${Math.abs(safeStats.totalBalance || 0).toFixed(2)}`,
+      value: `৳${Math.abs(safeStats.totalBalance || 0).toFixed(2)}`,
       subtitle: safeStats.totalBalance >= 0 ? 'Net receiving' : 'Net owing',
       icon: Users,
       color: safeStats.totalBalance >= 0 ? 'text-green-600' : 'text-red-600',
@@ -102,14 +102,14 @@ export function Dashboard({ stats, onNavigate }: DashboardProps) {
       ['Total Groups', safeStats.totalGroups],
       ['Total Friends', safeStats.totalFriends],
       ['Total Expenses', safeStats.totalExpenses],
-      ['Total Balance', `$${safeStats.totalBalance.toFixed(2)}`],
-      ['Total Owed', `$${safeStats.totalOwed.toFixed(2)}`],
-      ['Total Receiving', `$${safeStats.totalReceiving.toFixed(2)}`],
+      ['Total Balance', `৳${safeStats.totalBalance.toFixed(2)}`],
+      ['Total Owed', `৳${safeStats.totalOwed.toFixed(2)}`],
+      ['Total Receiving', `৳${safeStats.totalReceiving.toFixed(2)}`],
       ['', ''],
       ['Category', 'Amount', 'Count'],
       ...Object.values(categoryData).map((item: any) => [
         getCategoryInfo(item.category).label,
-        `$${item.amount.toFixed(2)}`,
+        `৳${item.amount.toFixed(2)}`,
         item.count
       ])
     ]
@@ -196,7 +196,7 @@ export function Dashboard({ stats, onNavigate }: DashboardProps) {
           </CardHeader>
           <CardContent className="relative z-10">
             <p className="text-5xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">
-              ${stats.totalReceiving.toFixed(2)}
+              ৳{stats.totalReceiving.toFixed(2)}
             </p>
             <p className="text-sm text-emerald-600/70 dark:text-emerald-400/70 mb-6">
               Money others owe you
@@ -222,7 +222,7 @@ export function Dashboard({ stats, onNavigate }: DashboardProps) {
           </CardHeader>
           <CardContent className="relative z-10">
             <p className="text-5xl font-bold text-red-600 dark:text-red-400 mb-2">
-              ${stats.totalOwed.toFixed(2)}
+              ৳{stats.totalOwed.toFixed(2)}
             </p>
             <p className="text-sm text-red-600/70 dark:text-red-400/70 mb-6">
               Money you owe others
@@ -267,7 +267,7 @@ export function Dashboard({ stats, onNavigate }: DashboardProps) {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value: any) => `$${value.toFixed(2)}`} />
+                  <Tooltip formatter={(value: any) => `৳${value.toFixed(2)}`} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="mt-4 space-y-2">
@@ -280,7 +280,7 @@ export function Dashboard({ stats, onNavigate }: DashboardProps) {
                       />
                       <span>{item.name}</span>
                     </div>
-                    <span>${item.value.toFixed(2)}</span>
+                    <span>৳{item.value.toFixed(2)}</span>
                   </div>
                 ))}
               </div>
@@ -303,14 +303,14 @@ export function Dashboard({ stats, onNavigate }: DashboardProps) {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip formatter={(value: any) => `$${value.toFixed(2)}`} />
+                  <Tooltip formatter={(value: any) => `৳${value.toFixed(2)}`} />
                   <Bar dataKey="value" fill="#3b82f6" />
                 </BarChart>
               </ResponsiveContainer>
               <div className="mt-4 text-center p-4 rounded-2xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10">
                 <p className="text-sm text-muted-foreground">Total Spending</p>
                 <p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  ${totalAmount.toFixed(2)}
+                  ৳{totalAmount.toFixed(2)}
                 </p>
               </div>
             </CardContent>
@@ -366,7 +366,7 @@ export function Dashboard({ stats, onNavigate }: DashboardProps) {
                     </div>
                     <div className="text-right">
                       <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
-                        ${activity.amount.toFixed(2)}
+                        ৳{activity.amount.toFixed(2)}
                       </p>
                       <span className={`text-xs px-3 py-1 rounded-full font-medium ${categoryInfo.bgColor} ${categoryInfo.color}`}>
                         {categoryInfo.label}

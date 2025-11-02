@@ -20,7 +20,7 @@ import { usePersonalExpenses } from './hooks/usePersonalExpenses'
 type Page = 'dashboard' | 'expenses' | 'groups' | 'friends' | 'activity' | 'profile'
 
 export default function App() {
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login')
+  const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot-password'>('login')
   const [currentPage, setCurrentPage] = useState<Page>('expenses')
   
   // Custom hooks for state management
@@ -56,6 +56,9 @@ export default function App() {
         case 'activity':
           await activity.fetchActivity()
           break
+        case 'profile':
+          await friends.fetchFriends()
+          break
       }
     }
 
@@ -74,6 +77,20 @@ export default function App() {
     setAuthMode('login')
   }
 
+  // Handle password reset
+  const handleResetPassword = async (email: string) => {
+    const { createClient } = await import('./utils/supabase/client')
+    const supabase = createClient()
+    
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin
+    })
+    
+    if (error) {
+      throw new Error(error.message)
+    }
+  }
+
   // Show loading screen while checking session
   if (isCheckingSession) {
     return <LoadingScreen />
@@ -87,7 +104,8 @@ export default function App() {
         isAuthenticating={isAuthenticating}
         onLogin={handleLogin}
         onSignup={handleSignupWrapper}
-        onSwitchMode={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+        onResetPassword={handleResetPassword}
+        onSwitchMode={setAuthMode}
       />
     )
   }
@@ -174,7 +192,13 @@ export default function App() {
         )}
 
         {currentPage === 'profile' && (
-          <ProfilePage user={user} onLogout={handleLogout} />
+          <ProfilePage 
+            user={user} 
+            friends={friends.friends}
+            loading={friends.loading}
+            onLogout={handleLogout}
+            onSettle={friends.handleSettleDebt}
+          />
         )}
       </main>
 
