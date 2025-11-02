@@ -136,6 +136,30 @@ export function usePersonalExpenses(accessToken: string | null) {
     }
   }
 
+  const scanReceipt = async (file: File) => {
+    if (!accessToken) return null
+
+    try {
+      // Convert file to base64
+      const reader = new FileReader()
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+      
+      const base64Image = await base64Promise
+      
+      // Call the API
+      const scannedData = await api.scanReceipt(accessToken, base64Image)
+      return scannedData
+    } catch (error) {
+      console.error('Failed to scan receipt:', error)
+      toast.error('Failed to scan receipt')
+      throw error
+    }
+  }
+
   return {
     expenses,
     budgets,
@@ -150,5 +174,6 @@ export function usePersonalExpenses(accessToken: string | null) {
     deleteBudget,
     searchExpenses,
     fetchTrends,
+    scanReceipt,
   }
 }

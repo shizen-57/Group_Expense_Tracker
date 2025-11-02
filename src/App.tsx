@@ -140,10 +140,7 @@ export default function App() {
             onCreateBudget={personalExpenses.createBudget}
             onDeleteBudget={personalExpenses.deleteBudget}
             onSearch={personalExpenses.searchExpenses}
-            onScanReceipt={async (file: File) => {
-              // Receipt scanning will be implemented in the component
-              return null
-            }}
+            onScanReceipt={personalExpenses.scanReceipt}
           />
         )}
 

@@ -439,5 +439,23 @@ export const api = {
       throw new Error(data.error)
     }
     return data || {}
+  },
+
+  // AI Receipt Scanning
+  async scanReceipt(token: string, imageBase64: string) {
+    const res = await fetch(`${API_BASE}/scan-receipt`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ image: imageBase64 })
+    })
+    const data = await res.json()
+    if (data.error) {
+      console.error('Error scanning receipt:', data.error, data.details)
+      throw new Error(data.error)
+    }
+    return data
   }
 }

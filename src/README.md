@@ -1,6 +1,28 @@
-# SplitWise - Expense Splitting Application
+# Personal Expense Manager with AI
 
-A comprehensive expense-splitting application built with React, TypeScript, Tailwind CSS, and Supabase backend. Split bills, track expenses, and manage group finances effortlessly.
+A comprehensive personal expense management application with AI-powered features, built with React, TypeScript, Tailwind CSS, Supabase backend, and Google Gemini AI.
+
+## ✨ AI-Powered Features
+
+### 🤖 Smart Natural Language Search
+Search your expenses using plain English queries:
+- "coffee expenses last week"
+- "groceries over ৳500"
+- "food spending this month"
+- "transportation costs"
+
+Powered by **Google Gemini Pro 2.0** - understands dates, categories, amounts, and context!
+
+### 📸 AI Receipt Scanner
+Upload receipt photos and let AI extract:
+- ✅ Total amount
+- ✅ Merchant/store name
+- ✅ Date (if visible)
+- ✅ Items purchased
+- ✅ Auto-categorization
+- ✅ Currency detection
+
+Powered by **Gemini Vision API** - real OCR, not mock data!
 
 ## Features
 
@@ -100,6 +122,10 @@ A comprehensive expense-splitting application built with React, TypeScript, Tail
 - **Hono** - Web framework for edge functions
 - **Deno** - Runtime for edge functions
 
+### AI/ML
+- **Google Gemini Pro 2.0 Flash** - Natural language understanding
+- **Gemini Vision API** - OCR and image analysis
+
 ## Architecture
 
 The application follows a three-tier architecture:
@@ -162,12 +188,24 @@ Frontend (React) → Server (Hono Edge Function) → Database (Supabase KV Store
 - Node.js 18+
 - Supabase account
 - Supabase project with environment variables configured
+- Google Gemini API key (for AI features)
 
 ### Installation
 
 1. Clone the repository
 2. The application is already configured with Supabase integration
-3. Start using the app by signing up for an account
+3. Set up AI features:
+   ```bash
+   # Set Gemini API key
+   supabase secrets set GEMINI_API_KEY=your_api_key_here
+   
+   # Deploy Edge Function
+   supabase functions deploy make-server-f573a585
+   ```
+   
+   See `GEMINI_AI_SETUP.md` for detailed setup instructions.
+
+4. Start using the app by signing up for an account
 
 ### First Steps
 

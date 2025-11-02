@@ -1342,25 +1342,235 @@ app.delete('/make-server-f573a585/budgets/:id', requireAuth, async (c) => {
   }
 })
 
-// Natural Language Search
+// Helper function to call Gemini API
+async function callGeminiAPI(prompt: string, systemInstruction?: string) {
+  const apiKey = Deno.env.get('GEMINI_API_KEY')
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY not configured')
+  }
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: prompt }]
+        }],
+        systemInstruction: systemInstruction ? {
+          parts: [{ text: systemInstruction }]
+        } : undefined,
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 1024,
+        }
+      })
+    }
+  )
+
+  if (!response.ok) {
+    throw new Error(`Gemini API error: ${response.statusText}`)
+  }
+
+  const data = await response.json()
+  return data.candidates[0]?.content?.parts[0]?.text || ''
+}
+
+// Helper function to call Gemini Vision API
+async function callGeminiVisionAPI(imageBase64: string, prompt: string) {
+  const apiKey = Deno.env.get('GEMINI_API_KEY')
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY not configured')
+  }
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: prompt },
+            {
+              inlineData: {
+                mimeType: 'image/jpeg',
+                data: imageBase64
+              }
+            }
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 2048,
+        }
+      })
+    }
+  )
+
+  if (!response.ok) {
+    throw new Error(`Gemini Vision API error: ${response.statusText}`)
+  }
+
+  const data = await response.json()
+  return data.candidates[0]?.content?.parts[0]?.text || ''
+}
+
+// Natural Language Search with Gemini AI
 app.get('/make-server-f573a585/search', requireAuth, async (c) => {
   try {
     const userId = c.get('userId')
-    const query = c.req.query('q')?.toLowerCase() || ''
+    const query = c.req.query('q') || ''
+    
+    if (!query.trim()) {
+      return c.json([])
+    }
     
     const expenses = await kv.get(`user:${userId}:personal_expenses`)
     const expenseList = expenses.value || []
     
-    // Simple NLP search - match keywords in description, category, and notes
+    // Use Gemini AI to parse the natural language query
+    const systemInstruction = `You are a financial assistant that parses natural language expense queries.
+Available categories: food, groceries, transport, entertainment, utilities, shopping, health, education, other.
+Parse the query and return a JSON object with filters. Include only filters that are explicitly mentioned.
+
+Return JSON in this exact format:
+{
+  "keywords": ["word1", "word2"],
+  "category": "category_name or null",
+  "dateFilter": "last_week|last_month|this_month|this_year|null",
+  "minAmount": number or null,
+  "maxAmount": number or null,
+  "explanation": "brief explanation of what you understood"
+}`
+
+    const prompt = `Parse this expense search query: "${query}"\n\nReturn only valid JSON, no markdown.`
+    
+    let filters: any = {}
+    try {
+      const aiResponse = await callGeminiAPI(prompt, systemInstruction)
+      // Remove markdown code blocks if present
+      const cleanResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+      filters = JSON.parse(cleanResponse)
+      console.log('Gemini parsed filters:', filters)
+    } catch (aiError) {
+      console.log('AI parsing failed, using fallback:', aiError)
+      // Fallback to simple keyword search
+      filters = { keywords: [query.toLowerCase()] }
+    }
+    
+    // Apply AI-parsed filters to expenses
     const results = expenseList.filter((exp: any) => {
-      const searchText = `${exp.description} ${exp.category} ${exp.notes}`.toLowerCase()
-      return searchText.includes(query)
+      // Check keywords
+      if (filters.keywords && filters.keywords.length > 0) {
+        const searchText = `${exp.description} ${exp.category} ${exp.notes || ''}`.toLowerCase()
+        const matchesKeywords = filters.keywords.some((keyword: string) => 
+          searchText.includes(keyword.toLowerCase())
+        )
+        if (!matchesKeywords) return false
+      }
+      
+      // Check category
+      if (filters.category && filters.category !== 'null') {
+        if (exp.category !== filters.category) return false
+      }
+      
+      // Check amount range
+      if (filters.minAmount !== null && exp.amount < filters.minAmount) return false
+      if (filters.maxAmount !== null && exp.amount > filters.maxAmount) return false
+      
+      // Check date filter
+      if (filters.dateFilter && filters.dateFilter !== 'null') {
+        const expDate = new Date(exp.createdAt)
+        const now = new Date()
+        
+        switch (filters.dateFilter) {
+          case 'last_week':
+            const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+            if (expDate < lastWeek) return false
+            break
+          case 'last_month':
+            const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate())
+            if (expDate < lastMonth) return false
+            break
+          case 'this_month':
+            if (expDate.getMonth() !== now.getMonth() || expDate.getFullYear() !== now.getFullYear()) return false
+            break
+          case 'this_year':
+            if (expDate.getFullYear() !== now.getFullYear()) return false
+            break
+        }
+      }
+      
+      return true
     })
     
     return c.json(results)
   } catch (error) {
     console.log('Error searching expenses:', error)
     return c.json({ error: 'Failed to search expenses' }, 500)
+  }
+})
+
+// AI Receipt Scanner with Gemini Vision
+app.post('/make-server-f573a585/scan-receipt', requireAuth, async (c) => {
+  try {
+    const userId = c.get('userId')
+    const body = await c.req.json()
+    const imageBase64 = body.image
+    
+    if (!imageBase64) {
+      return c.json({ error: 'No image provided' }, 400)
+    }
+    
+    // Remove data URL prefix if present
+    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '')
+    
+    // Use Gemini Vision to analyze the receipt
+    const prompt = `Analyze this receipt image and extract the following information in JSON format:
+{
+  "merchant": "merchant/store name",
+  "amount": total_amount_as_number,
+  "date": "date in YYYY-MM-DD format if visible, otherwise null",
+  "items": ["item1", "item2"],
+  "category": "one of: food, groceries, transport, entertainment, utilities, shopping, health, education, other",
+  "currency": "currency symbol or code if visible",
+  "notes": "any additional relevant information"
+}
+
+Guidelines:
+- Extract the TOTAL amount (not individual items)
+- Suggest the most appropriate category based on the merchant and items
+- If you see multiple amounts, use the final total
+- For Bangladeshi receipts, amounts might be in Taka (৳)
+- Return only valid JSON, no markdown or extra text`
+
+    const aiResponse = await callGeminiVisionAPI(base64Data, prompt)
+    console.log('Gemini Vision response:', aiResponse)
+    
+    // Parse the AI response
+    const cleanResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    const scannedData = JSON.parse(cleanResponse)
+    
+    // Create a description from merchant name
+    const description = scannedData.merchant || 'Receipt scan'
+    
+    // Return the structured data
+    return c.json({
+      description: description,
+      amount: scannedData.amount || 0,
+      category: scannedData.category || 'other',
+      notes: scannedData.notes || `Items: ${scannedData.items?.join(', ') || 'N/A'}`,
+      date: scannedData.date,
+      rawData: scannedData
+    })
+  } catch (error) {
+    console.log('Error scanning receipt:', error)
+    return c.json({ 
+      error: 'Failed to scan receipt',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, 500)
   }
 })
 

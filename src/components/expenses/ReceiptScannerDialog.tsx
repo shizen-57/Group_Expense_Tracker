@@ -25,27 +25,44 @@ export function ReceiptScannerDialog({ open, onOpenChange, onScan, onCreate }: R
     const file = e.target.files?.[0]
     if (!file) return
 
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError('Please select an image file')
+      return
+    }
+
     setSelectedFile(file)
     setScanning(true)
     setError(null)
     setScannedData(null)
 
     try {
-      // Simulate AI receipt scanning
-      // In a real app, this would call an OCR API like Google Vision, AWS Textract, etc.
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // Convert image to base64
+      const reader = new FileReader()
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
       
-      // Mock scanned data with smart categorization
-      const mockData = {
-        description: 'Receipt scan',
-        amount: (Math.random() * 100 + 10).toFixed(2),
-        category: suggestCategory(file.name),
-        notes: `Scanned from ${file.name}`
+      const base64Image = await base64Promise
+      
+      // Call the AI receipt scanning API
+      const scannedResult = await onScan(file)
+      
+      if (scannedResult && scannedResult.amount !== undefined) {
+        setScannedData({
+          description: scannedResult.description || 'Receipt scan',
+          amount: scannedResult.amount.toFixed(2),
+          category: scannedResult.category || 'other',
+          notes: scannedResult.notes || `Scanned from ${file.name}`
+        })
+      } else {
+        throw new Error('Invalid response from receipt scanner')
       }
-      
-      setScannedData(mockData)
     } catch (err: any) {
-      setError(err.message || 'Failed to scan receipt')
+      console.error('Receipt scanning error:', err)
+      setError(err.message || 'Failed to scan receipt. Please try again or enter details manually.')
     } finally {
       setScanning(false)
     }
