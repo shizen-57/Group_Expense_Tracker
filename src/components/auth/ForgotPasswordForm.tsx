@@ -38,18 +38,18 @@ export function ForgotPasswordForm({ onResetPassword, onBack }: ForgotPasswordFo
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <Card className="w-full max-w-md border-0 shadow-2xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl">
-        <CardHeader className="text-center pb-8">
+      <Card className="w-full max-w-md border-0 shadow-[0_20px_70px_-10px_rgba(16,185,129,0.3)] bg-white/95 backdrop-blur-xl">
+        <CardHeader className="text-center pb-8 pt-8">
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="inline-flex mx-auto mb-4 p-4 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg"
+            className="inline-flex mx-auto mb-6 p-5 rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-[0_10px_40px_-10px_rgba(16,185,129,0.5)]"
           >
-            <KeyRound className="h-8 w-8 text-white" />
+            <KeyRound className="h-10 w-10 text-white" />
           </motion.div>
-          <CardTitle className="text-3xl gradient-text">Reset Password</CardTitle>
-          <CardDescription className="text-base">
+          <CardTitle className="text-4xl gradient-text mb-2">Reset Password</CardTitle>
+          <CardDescription className="text-base text-gray-600">
             Enter your email to receive a password reset link
           </CardDescription>
         </CardHeader>
@@ -60,8 +60,8 @@ export function ForgotPasswordForm({ onResetPassword, onBack }: ForgotPasswordFo
               animate={{ opacity: 1, scale: 1 }}
               className="text-center space-y-4"
             >
-              <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800">
-                <p className="text-emerald-600 dark:text-emerald-400">
+              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200">
+                <p className="text-emerald-600">
                   Password reset instructions have been sent to your email!
                 </p>
               </div>
@@ -86,7 +86,7 @@ export function ForgotPasswordForm({ onResetPassword, onBack }: ForgotPasswordFo
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 h-12 bg-white/50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 focus:border-emerald-500 focus:ring-emerald-500"
+                    className="pl-10 h-12 bg-white border-gray-200 focus:border-emerald-500 focus:ring-emerald-500"
                     required
                   />
                 </div>
@@ -96,7 +96,7 @@ export function ForgotPasswordForm({ onResetPassword, onBack }: ForgotPasswordFo
                 <motion.div
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="p-3 rounded-xl bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm"
+                  className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm"
                 >
                   {error}
                 </motion.div>
@@ -104,7 +104,7 @@ export function ForgotPasswordForm({ onResetPassword, onBack }: ForgotPasswordFo
 
               <Button
                 type="submit"
-                className="w-full h-12 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg hover:shadow-xl transition-all text-base font-semibold"
+                className="w-full h-14 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-[0_10px_30px_-5px_rgba(16,185,129,0.4)] hover:shadow-[0_15px_40px_-5px_rgba(16,185,129,0.5)] transition-all duration-300 text-base font-semibold"
                 disabled={loading}
               >
                 {loading ? 'Sending...' : 'Send Reset Link'}

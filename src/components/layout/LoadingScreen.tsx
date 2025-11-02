@@ -5,7 +5,7 @@ export function LoadingScreen() {
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center">
       {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-gray-900 dark:via-emerald-950 dark:to-teal-950" />
+      <div className="absolute inset-0 bg-gradient-to-br from-white via-emerald-50 to-teal-50" />
       
       {/* Floating gradient orbs */}
       <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl animate-pulse" />

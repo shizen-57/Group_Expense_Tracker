@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog'
 import { Button } from '../ui/button'
 import { Upload, Camera, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react'
 import { Card, CardContent } from '../ui/card'
@@ -110,6 +110,9 @@ export function ReceiptScannerDialog({ open, onOpenChange, onScan, onCreate }: R
             <Camera className="h-5 w-5" />
             AI Receipt Scanner
           </DialogTitle>
+          <DialogDescription>
+            Upload a receipt image and let AI automatically extract the expense details.
+          </DialogDescription>
         </DialogHeader>
 
         {!scannedData && !scanning && (

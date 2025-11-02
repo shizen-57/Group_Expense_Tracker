@@ -29,6 +29,13 @@ export function AIInsights({ onFetchInsights }: AIInsightsProps) {
       setInsights(data)
     } catch (error) {
       console.error('Failed to fetch insights:', error)
+      // Set fallback data on error
+      setInsights({
+        insights: [],
+        summary: 'Unable to generate AI insights at the moment. Please check your API configuration and try again later.',
+        recommendations: [],
+        stats: null
+      })
     } finally {
       setLoading(false)
     }

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Button } from '../ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { UserPlus, Check } from 'lucide-react'
 import { ScrollArea } from '../ui/scroll-area'
 import { Input } from '../ui/input'
@@ -60,6 +60,9 @@ export function AddFriendToGroupDialog({ friends, existingMemberIds, onAddMember
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add Friend to Group</DialogTitle>
+          <DialogDescription>
+            Select a friend from your list to add them to this group.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <Input

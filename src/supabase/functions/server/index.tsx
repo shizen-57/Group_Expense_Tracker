@@ -1571,6 +1571,24 @@ app.get('/make-server-f573a585/search', requireAuth, async (c) => {
     const expenses = await kv.get(`user:${userId}:personal_expenses`)
     const expenseList = expenses.value || []
     
+    // Check if API key is configured
+    const apiKey = Deno.env.get('GEMINI_API_KEY')
+    if (!apiKey) {
+      console.log('GEMINI_API_KEY not configured, using basic search')
+      // Fallback to basic keyword search
+      const searchLower = query.toLowerCase()
+      const results = expenseList.filter((exp: any) => {
+        const searchText = `${exp.description} ${exp.category} ${exp.notes || ''}`.toLowerCase()
+        return searchText.includes(searchLower)
+      })
+      
+      return c.json({ 
+        type: 'results', 
+        data: results,
+        explanation: `Basic search results for "${query}" (AI search requires GEMINI_API_KEY configuration)`
+      })
+    }
+    
     // Enhanced system instruction for AI
     const systemInstruction = `You are an intelligent financial assistant analyzing user expenses.
 
@@ -1696,6 +1714,16 @@ app.post('/make-server-f573a585/scan-receipt', requireAuth, async (c) => {
       return c.json({ error: 'No image provided' }, 400)
     }
     
+    // Check if API key is configured
+    const apiKey = Deno.env.get('GEMINI_API_KEY')
+    if (!apiKey) {
+      console.log('GEMINI_API_KEY not configured, returning error')
+      return c.json({ 
+        error: 'AI receipt scanning is not configured. Please set GEMINI_API_KEY environment variable.',
+        details: 'GEMINI_API_KEY not configured'
+      }, 503)
+    }
+    
     // Remove data URL prefix if present
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '')
     
@@ -1804,7 +1832,49 @@ app.get('/make-server-f573a585/ai/insights', requireAuth, async (c) => {
       return c.json({
         insights: [],
         summary: 'No expenses yet. Start tracking to get personalized insights!',
-        recommendations: []
+        recommendations: [],
+        stats: {
+          thisMonth: 0,
+          lastMonth: 0,
+          change: 0,
+          changePercentage: 0
+        }
+      })
+    }
+    
+    // Check if API key is configured
+    const apiKey = Deno.env.get('GEMINI_API_KEY')
+    if (!apiKey) {
+      console.log('GEMINI_API_KEY not configured, returning basic stats without AI insights')
+      // Calculate basic stats without AI
+      const now = new Date()
+      const thisMonth = expenseList.filter((exp: any) => {
+        const expDate = new Date(exp.createdAt)
+        return expDate.getMonth() === now.getMonth() && expDate.getFullYear() === now.getFullYear()
+      })
+      const lastMonth = expenseList.filter((exp: any) => {
+        const expDate = new Date(exp.createdAt)
+        const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+        return expDate.getMonth() === lastMonthDate.getMonth() && expDate.getFullYear() === lastMonthDate.getFullYear()
+      })
+      const totalThisMonth = thisMonth.reduce((sum: number, exp: any) => sum + exp.amount, 0)
+      const totalLastMonth = lastMonth.reduce((sum: number, exp: any) => sum + exp.amount, 0)
+      
+      return c.json({
+        insights: [{
+          type: 'info',
+          severity: 'info',
+          message: 'AI insights are not available. Configure GEMINI_API_KEY for advanced analytics.',
+          value: 0
+        }],
+        summary: `You have ${expenseList.length} expenses tracked. AI insights require configuration.`,
+        recommendations: [],
+        stats: {
+          thisMonth: totalThisMonth,
+          lastMonth: totalLastMonth,
+          change: totalThisMonth - totalLastMonth,
+          changePercentage: totalLastMonth > 0 ? ((totalThisMonth - totalLastMonth) / totalLastMonth) * 100 : 0
+        }
       })
     }
     

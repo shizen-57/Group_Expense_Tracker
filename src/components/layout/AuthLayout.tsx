@@ -18,12 +18,12 @@ export function AuthLayout({ authMode, isAuthenticating, onLogin, onSignup, onRe
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
       {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-gray-900 dark:via-emerald-950 dark:to-teal-950" />
+      <div className="absolute inset-0 bg-gradient-to-br from-white via-emerald-50 to-teal-50" />
       
       {/* Floating gradient orbs */}
-      <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-20 right-10 w-96 h-96 bg-teal-300/30 rounded-full blur-3xl animate-pulse delay-1000" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-cyan-300/20 rounded-full blur-3xl animate-pulse delay-500" />
+      <div className="absolute top-20 left-10 w-96 h-96 bg-emerald-300/30 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-20 right-10 w-[500px] h-[500px] bg-teal-300/30 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-300/25 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '0.5s' }} />
       
       <div className="relative z-10 w-full max-w-md">
         <AnimatePresence mode="wait">
@@ -33,7 +33,7 @@ export function AuthLayout({ authMode, isAuthenticating, onLogin, onSignup, onRe
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="text-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-2xl p-12 border border-white/20"
+              className="text-center bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl p-12 border border-emerald-100"
             >
               <div className="inline-flex p-4 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg mb-6">
                 <Loader2 className="w-12 h-12 animate-spin text-white" />
