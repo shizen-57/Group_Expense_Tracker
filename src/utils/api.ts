@@ -432,17 +432,31 @@ export const api = {
 
   // AI Spending Insights
   async getAIInsights(token: string) {
-    const res = await fetch(`${API_BASE}/ai/insights`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
+    try {
+      const res = await fetch(`${API_BASE}/ai/insights`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (!res.ok) {
+        console.error('AI insights request failed with status:', res.status)
+        throw new Error(`Request failed with status ${res.status}`)
       }
-    })
-    const data = await res.json()
-    if (data.error) {
-      console.error('Error fetching AI insights:', data.error)
-      throw new Error(data.error)
+      
+      const data = await res.json()
+      
+      // Backend now returns 200 with error field instead of 500
+      // So just return the data, error field will be present if there was an issue
+      if (data.error) {
+        console.warn('AI insights returned with warning:', data.error)
+      }
+      
+      return data
+    } catch (error: any) {
+      console.error('Error fetching AI insights:', error.message)
+      throw error
     }
-    return data
   },
 
   // Analytics

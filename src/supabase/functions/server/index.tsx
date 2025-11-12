@@ -1949,11 +1949,41 @@ Be specific, actionable, and supportive. Use Bangladeshi Taka (৳) for amounts.
 
     const prompt = `Analyze this user's spending and provide insights:\n\n${context}\n\nReturn JSON only, no markdown.`
     
-    const aiResponse = await callGeminiAPI(prompt, systemInstruction)
-    const cleanResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-    const insights = JSON.parse(cleanResponse)
-    
-    console.log('AI Insights generated:', insights)
+    // Call AI with better error handling
+    let insights
+    try {
+      const aiResponse = await callGeminiAPI(prompt, systemInstruction)
+      const cleanResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+      insights = JSON.parse(cleanResponse)
+      console.log('AI Insights generated successfully')
+    } catch (aiError: any) {
+      console.error('AI Generation Error:', aiError.message)
+      // Return fallback insights if AI fails
+      return c.json({
+        insights: [{
+          type: 'info',
+          severity: 'info',
+          message: `You've spent ৳${totalThisMonth.toFixed(2)} this month across ${thisMonth.length} transactions.`,
+          value: totalThisMonth
+        }],
+        summary: `Your spending this month is ৳${totalThisMonth.toFixed(2)}, ${totalThisMonth > totalLastMonth ? 'up' : 'down'} from last month's ৳${totalLastMonth.toFixed(2)}.`,
+        recommendations: [],
+        patterns: [],
+        predictions: {
+          month_end_total: totalThisMonth,
+          confidence: 'low',
+          reasoning: 'Based on current spending'
+        },
+        stats: {
+          thisMonth: totalThisMonth,
+          lastMonth: totalLastMonth,
+          change: totalThisMonth - totalLastMonth,
+          changePercentage: totalLastMonth > 0 ? ((totalThisMonth - totalLastMonth) / totalLastMonth * 100) : 0
+        },
+        generatedAt: new Date().toISOString(),
+        error: 'AI insights temporarily unavailable. Using basic statistics.'
+      })
+    }
     
     return c.json({
       ...insights,
@@ -1965,9 +1995,33 @@ Be specific, actionable, and supportive. Use Bangladeshi Taka (৳) for amounts.
         changePercentage: totalLastMonth > 0 ? ((totalThisMonth - totalLastMonth) / totalLastMonth * 100) : 0
       }
     })
-  } catch (error) {
-    console.log('Error generating insights:', error)
-    return c.json({ error: 'Failed to generate insights' }, 500)
+  } catch (error: any) {
+    console.error('Error in insights endpoint:', error.message, error.stack)
+    // Return a valid response even on error
+    return c.json({
+      insights: [{
+        type: 'info',
+        severity: 'info',
+        message: 'Insights temporarily unavailable. Please try again later.',
+        value: 0
+      }],
+      summary: 'Unable to generate insights at this time.',
+      recommendations: [],
+      patterns: [],
+      predictions: {
+        month_end_total: 0,
+        confidence: 'low',
+        reasoning: 'Data unavailable'
+      },
+      stats: {
+        thisMonth: 0,
+        lastMonth: 0,
+        change: 0,
+        changePercentage: 0
+      },
+      generatedAt: new Date().toISOString(),
+      error: 'Service temporarily unavailable'
+    }, 200) // Return 200 with error field instead of 500
   }
 })
 

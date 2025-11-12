@@ -26,15 +26,32 @@ export function AIInsights({ onFetchInsights }: AIInsightsProps) {
     setLoading(true)
     try {
       const data = await onFetchInsights()
+      console.log('AI Insights fetched:', data)
       setInsights(data)
-    } catch (error) {
-      console.error('Failed to fetch insights:', error)
+    } catch (error: any) {
+      console.error('Failed to fetch insights:', error.message || error)
       // Set fallback data on error
       setInsights({
-        insights: [],
-        summary: 'Unable to generate AI insights at the moment. Please check your API configuration and try again later.',
-        recommendations: [],
-        stats: null
+        insights: [{
+          type: 'info',
+          severity: 'info',
+          message: 'AI insights are temporarily unavailable. This could be due to API configuration or network issues.',
+          value: 0
+        }],
+        summary: 'Unable to generate AI insights at the moment. Please check your GEMINI_API_KEY configuration and try again later.',
+        recommendations: [{
+          priority: 'low',
+          action: 'Configure your Google Gemini API key to enable AI-powered insights and recommendations.',
+          potential_savings: 0
+        }],
+        patterns: [],
+        predictions: null,
+        stats: {
+          thisMonth: 0,
+          lastMonth: 0,
+          change: 0,
+          changePercentage: 0
+        }
       })
     } finally {
       setLoading(false)

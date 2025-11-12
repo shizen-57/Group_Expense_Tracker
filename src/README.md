@@ -2,6 +2,27 @@
 
 A comprehensive personal expense management application with AI-powered features, built with React, TypeScript, Tailwind CSS, Supabase backend, and Google Gemini AI.
 
+---
+
+## 🎓 Assignment 2: Pattern-based Refactoring
+
+This project includes a comprehensive pattern-based refactoring implementation for **Assignment 2** (Total Marks: 15).
+
+**📄 Assignment Documents:**
+- [`ASSIGNMENT_2_REPORT.md`](./ASSIGNMENT_2_REPORT.md) - Main report with patterns, UML diagrams, and refactoring
+- [`ASSIGNMENT_2_TESTING_SUMMARY.md`](./ASSIGNMENT_2_TESTING_SUMMARY.md) - Test evidence (69 tests, 87% coverage)
+- [`ASSIGNMENT_2_QUICK_START.md`](./ASSIGNMENT_2_QUICK_START.md) - Quick overview and submission guide
+- [`ASSIGNMENT_2_SUBMISSION_CHECKLIST.md`](./ASSIGNMENT_2_SUBMISSION_CHECKLIST.md) - Complete checklist
+
+**🎯 Patterns Implemented:**
+1. **Repository Pattern** (Backend) - Data access abstraction with caching
+2. **Observer Pattern** (Frontend) - Real-time UI updates without prop drilling  
+3. **Strategy Pattern** (Backend) - Modular expense splitting algorithms
+
+**📊 Results:** 87% test coverage, 23% performance improvement, 48% complexity reduction
+
+---
+
 ## ✨ AI-Powered Features
 
 ### 🤖 Intelligent Conversational AI
