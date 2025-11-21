@@ -86,7 +86,7 @@ export function AddFriendToGroupDialog({ friends, existingMemberIds, onAddMember
                 {filteredFriends.map((friend) => (
                   <div
                     key={friend.id}
-                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex-1">
                       <p className="font-medium">{friend.name}</p>

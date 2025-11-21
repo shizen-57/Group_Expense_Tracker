@@ -166,7 +166,7 @@ export function GroupDetail({
           const debtor = getMemberName(debtorId)
           
           return (
-            <div key={key} className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-800 rounded">
+            <div key={key} className="flex justify-between items-center p-2 bg-gray-50 rounded">
               <span className="text-sm">
                 {debtor} owes {creditor}
               </span>
@@ -255,7 +255,7 @@ export function GroupDetail({
 
       {/* Total Bill Display */}
       {totalBill > 0 && (
-        <Card className="border-2 border-emerald-200 dark:border-emerald-800 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20">
+        <Card className="border-2 border-emerald-200 bg-white">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
@@ -273,7 +273,7 @@ export function GroupDetail({
       )}
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+        <Card className="border-0 shadow-xl bg-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle className="text-lg">Members</CardTitle>
             <div className="flex items-center gap-2">
@@ -288,7 +288,7 @@ export function GroupDetail({
           <CardContent>
             <div className="space-y-2">
               {group.members.map((member) => (
-                <div key={member.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border">
+                <div key={member.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors border">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-semibold">
                       {member.name.charAt(0).toUpperCase()}
@@ -310,7 +310,7 @@ export function GroupDetail({
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+        <Card className="border-0 shadow-xl bg-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle className="text-lg">Balances</CardTitle>
             <Calculator className="h-5 w-5 text-muted-foreground" />
@@ -332,7 +332,7 @@ export function GroupDetail({
         </Card>
       </div>
 
-      <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+      <Card className="border-0 shadow-xl bg-white">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="text-lg">Expenses</CardTitle>
           <div className="flex items-center gap-2">
@@ -418,7 +418,7 @@ export function GroupDetail({
                           <p className="text-sm text-muted-foreground mt-1 italic">{expense.notes}</p>
                         )}
                         {expense.splitType && expense.splitType !== 'equal' && expense.splitAmounts && (
-                          <div className="mt-2 text-xs text-muted-foreground bg-gray-50 dark:bg-gray-900 p-2 rounded">
+                          <div className="mt-2 text-xs text-muted-foreground bg-gray-50 p-2 rounded">
                             <p className="font-medium mb-1">
                               {expense.splitType === 'unequal' ? 'Custom Split:' : 'Percentage Split:'}
                             </p>

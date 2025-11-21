@@ -29,7 +29,7 @@ export function ExpenseList({ expenses, onDelete }: ExpenseListProps) {
 
   if (expensesArray.length === 0) {
     return (
-      <Card className="border-0 shadow-xl">
+      <Card className="border-0 shadow-xl bg-white">
         <CardContent className="py-12">
           <div className="text-center">
             <div className="inline-flex p-6 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 mb-4">
@@ -52,7 +52,7 @@ export function ExpenseList({ expenses, onDelete }: ExpenseListProps) {
         return (
           <Card 
             key={expense.id}
-            className="border-0 shadow-lg hover:shadow-xl transition-all card-hover bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+            className="border-0 shadow-lg hover:shadow-xl transition-all card-hover bg-white/95 backdrop-blur-sm"
           >
             <CardContent className="p-6">
               <div className="flex items-center justify-between">

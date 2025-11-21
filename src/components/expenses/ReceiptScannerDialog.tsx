@@ -182,7 +182,7 @@ export function ReceiptScannerDialog({ open, onOpenChange, onScan, onCreate }: R
               <span className="font-medium">Receipt scanned successfully!</span>
             </div>
 
-            <Card className="border-2 border-emerald-200">
+            <Card className="border-2 border-emerald-200 bg-white">
               <CardContent className="p-6 space-y-4">
                 <div className="space-y-2">
                   <Label>Description</Label>

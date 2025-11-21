@@ -1342,79 +1342,199 @@ app.delete('/make-server-f573a585/budgets/:id', requireAuth, async (c) => {
   }
 })
 
-// Helper function to call Gemini API
-async function callGeminiAPI(prompt: string, systemInstruction?: string) {
-  const apiKey = Deno.env.get('GEMINI_API_KEY')
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY not configured')
-  }
-
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: prompt }]
-        }],
-        systemInstruction: systemInstruction ? {
-          parts: [{ text: systemInstruction }]
-        } : undefined,
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 1024,
-        }
-      })
-    }
-  )
-
-  if (!response.ok) {
-    throw new Error(`Gemini API error: ${response.statusText}`)
-  }
-
-  const data = await response.json()
-  return data.candidates[0]?.content?.parts[0]?.text || ''
+// Rate limiting state - Conservative for OpenRouter free tier
+const rateLimitState = {
+  lastCallTime: 0,
+  callCount: 0,
+  resetTime: 0,
+  minDelay: 10000, // 10 seconds between calls (very conservative for free tier)
+  maxCallsPerMinute: 4 // Reduced from 6 to 4 for OpenRouter free tier
 }
 
-// Helper function to call Gemini Vision API
-async function callGeminiVisionAPI(imageBase64: string, prompt: string) {
-  const apiKey = Deno.env.get('GEMINI_API_KEY')
+// Helper function to check and enforce rate limits
+async function checkRateLimit() {
+  const now = Date.now()
+  
+  // Reset counter every minute
+  if (now > rateLimitState.resetTime) {
+    rateLimitState.callCount = 0
+    rateLimitState.resetTime = now + 60000 // Next minute
+  }
+  
+  // Check if we've exceeded calls per minute
+  if (rateLimitState.callCount >= rateLimitState.maxCallsPerMinute) {
+    const waitTime = rateLimitState.resetTime - now
+    console.log(`Rate limit reached (${rateLimitState.callCount}/${rateLimitState.maxCallsPerMinute}), reset in ${waitTime}ms`)
+    throw new Error(`Rate limit: ${Math.ceil(waitTime / 1000)}s cooldown. Cached results served for 30 minutes.`)
+  }
+  
+  // Enforce minimum delay between calls
+  const timeSinceLastCall = now - rateLimitState.lastCallTime
+  if (timeSinceLastCall < rateLimitState.minDelay) {
+    const waitTime = rateLimitState.minDelay - timeSinceLastCall
+    console.log(`Enforcing rate limit delay: ${waitTime}ms`)
+    await new Promise(resolve => setTimeout(resolve, waitTime))
+  }
+  
+  rateLimitState.lastCallTime = Date.now()
+  rateLimitState.callCount++
+}
+
+// Helper function to call OpenRouter API with rate limiting and retry logic
+async function callGeminiAPI(prompt: string, systemInstruction?: string, retryCount = 0) {
+  const apiKey = Deno.env.get('OPENROUTER_API_KEY')
   if (!apiKey) {
-    throw new Error('GEMINI_API_KEY not configured')
+    throw new Error('OPENROUTER_API_KEY not configured')
   }
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: prompt },
-            {
-              inlineData: {
-                mimeType: 'image/jpeg',
-                data: imageBase64
-              }
-            }
-          ]
-        }],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 2048,
-        }
+  // Check rate limits before making call
+  await checkRateLimit()
+
+  try {
+    const messages: any[] = []
+    
+    if (systemInstruction) {
+      messages.push({
+        role: 'system',
+        content: systemInstruction
       })
     }
-  )
+    
+    messages.push({
+      role: 'user',
+      content: prompt
+    })
 
-  if (!response.ok) {
-    throw new Error(`Gemini Vision API error: ${response.statusText}`)
+    const response = await fetch(
+      'https://openrouter.ai/api/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://expense-manager.app',
+          'X-Title': 'Expense Manager AI'
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.0-flash-exp:free',
+          messages: messages,
+          temperature: 0.1,
+          max_tokens: 1024,
+        })
+      }
+    )
+
+    const data = await response.json()
+
+    // Handle rate limit errors from API
+    if (!response.ok) {
+      if (response.status === 429) {
+        console.error('OpenRouter API rate limit exceeded')
+        throw new Error('Too Many Requests')
+      }
+      
+      // Check for error in response body
+      if (data.error) {
+        console.error('OpenRouter API error:', data.error)
+        throw new Error(data.error.message || 'API error')
+      }
+      
+      throw new Error(`OpenRouter API error: ${response.statusText}`)
+    }
+
+    return data.choices?.[0]?.message?.content || ''
+  } catch (error: any) {
+    // Don't retry on rate limit errors - let caller handle gracefully
+    if (error.message.includes('Too Many Requests')) {
+      throw error
+    }
+    
+    // Retry on network errors (max 2 retries)
+    if (retryCount < 2 && !error.message.includes('not configured')) {
+      console.log(`Retrying API call (attempt ${retryCount + 1})...`)
+      await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 1000))
+      return callGeminiAPI(prompt, systemInstruction, retryCount + 1)
+    }
+    
+    throw error
+  }
+}
+
+// Helper function to call OpenRouter Vision API with rate limiting
+async function callGeminiVisionAPI(imageBase64: string, prompt: string, retryCount = 0) {
+  const apiKey = Deno.env.get('OPENROUTER_API_KEY')
+  if (!apiKey) {
+    throw new Error('OPENROUTER_API_KEY not configured')
   }
 
-  const data = await response.json()
-  return data.candidates[0]?.content?.parts[0]?.text || ''
+  // Check rate limits before making call
+  await checkRateLimit()
+
+  try {
+    const response = await fetch(
+      'https://openrouter.ai/api/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://expense-manager.app',
+          'X-Title': 'Expense Manager AI'
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.0-flash-exp:free',
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:image/jpeg;base64,${imageBase64}`
+                }
+              }
+            ]
+          }],
+          temperature: 0.1,
+          max_tokens: 2048,
+        })
+      }
+    )
+
+    const data = await response.json()
+
+    // Handle rate limit errors from API
+    if (!response.ok) {
+      if (response.status === 429) {
+        console.error('OpenRouter Vision API rate limit exceeded')
+        throw new Error('Too Many Requests')
+      }
+      
+      // Check for error in response body
+      if (data.error) {
+        console.error('OpenRouter Vision API error:', data.error)
+        throw new Error(data.error.message || 'API error')
+      }
+      
+      throw new Error(`OpenRouter Vision API error: ${response.statusText}`)
+    }
+
+    return data.choices?.[0]?.message?.content || ''
+  } catch (error: any) {
+    // Don't retry on rate limit errors
+    if (error.message.includes('Too Many Requests')) {
+      throw error
+    }
+    
+    // Retry on network errors (max 2 retries)
+    if (retryCount < 2 && !error.message.includes('not configured')) {
+      console.log(`Retrying Vision API call (attempt ${retryCount + 1})...`)
+      await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 1000))
+      return callGeminiVisionAPI(imageBase64, prompt, retryCount + 1)
+    }
+    
+    throw error
+  }
 }
 
 // Helper function to handle analytics queries
@@ -1558,7 +1678,7 @@ async function handleAnalyticsQuery(parsedQuery: any, expenseList: any[], origin
   }
 }
 
-// Enhanced Natural Language Search & Analytics with Gemini AI
+// Enhanced Natural Language Search & Analytics with OpenRouter AI
 app.get('/make-server-f573a585/search', requireAuth, async (c) => {
   try {
     const userId = c.get('userId')
@@ -1571,10 +1691,21 @@ app.get('/make-server-f573a585/search', requireAuth, async (c) => {
     const expenses = await kv.get(`user:${userId}:personal_expenses`)
     const expenseList = expenses.value || []
     
+    // Check cache first (10 minute cache for search results)
+    const searchCacheKey = `search:${userId}:${query.toLowerCase().trim()}`
+    const cachedSearch = await kv.get(searchCacheKey)
+    if (cachedSearch.value) {
+      const cacheAge = Date.now() - new Date(cachedSearch.value.cachedAt).getTime()
+      if (cacheAge < 10 * 60 * 1000) { // 10 minutes
+        console.log(`Returning cached search (age: ${Math.round(cacheAge / 1000)}s)`)
+        return c.json(cachedSearch.value.data)
+      }
+    }
+    
     // Check if API key is configured
-    const apiKey = Deno.env.get('GEMINI_API_KEY')
+    const apiKey = Deno.env.get('OPENROUTER_API_KEY')
     if (!apiKey) {
-      console.log('GEMINI_API_KEY not configured, using basic search')
+      console.log('OPENROUTER_API_KEY not configured, using basic search')
       // Fallback to basic keyword search
       const searchLower = query.toLowerCase()
       const results = expenseList.filter((exp: any) => {
@@ -1585,7 +1716,7 @@ app.get('/make-server-f573a585/search', requireAuth, async (c) => {
       return c.json({ 
         type: 'results', 
         data: results,
-        explanation: `Basic search results for "${query}" (AI search requires GEMINI_API_KEY configuration)`
+        explanation: `Basic search results for "${query}" (AI search requires OPENROUTER_API_KEY configuration)`
       })
     }
     
@@ -1639,7 +1770,7 @@ For ANALYTICAL queries, return:
       const aiResponse = await callGeminiAPI(prompt, systemInstruction)
       const cleanResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
       parsedQuery = JSON.parse(cleanResponse)
-      console.log('Gemini parsed query:', parsedQuery)
+      console.log('OpenRouter parsed query:', parsedQuery)
     } catch (aiError) {
       console.log('AI parsing failed, using fallback:', aiError)
       parsedQuery = { type: 'search', keywords: [query.toLowerCase()] }
@@ -1647,7 +1778,13 @@ For ANALYTICAL queries, return:
     
     // Handle analytics queries
     if (parsedQuery.type === 'analytics') {
-      return await handleAnalyticsQuery(parsedQuery, expenseList, query)
+      const analyticsResult = await handleAnalyticsQuery(parsedQuery, expenseList, query)
+      // Cache analytics result
+      await kv.set(searchCacheKey, {
+        data: analyticsResult,
+        cachedAt: new Date().toISOString()
+      })
+      return analyticsResult
     }
     
     // Handle search queries - filter expenses
@@ -1692,18 +1829,26 @@ For ANALYTICAL queries, return:
       return true
     })
     
-    return c.json({ 
+    const searchResult = { 
       type: 'results', 
       data: results,
       explanation: parsedQuery.explanation 
+    }
+    
+    // Cache search result
+    await kv.set(searchCacheKey, {
+      data: searchResult,
+      cachedAt: new Date().toISOString()
     })
+    
+    return c.json(searchResult)
   } catch (error) {
     console.log('Error searching expenses:', error)
     return c.json({ error: 'Failed to search expenses' }, 500)
   }
 })
 
-// AI Receipt Scanner with Gemini Vision
+// AI Receipt Scanner with OpenRouter Vision
 app.post('/make-server-f573a585/scan-receipt', requireAuth, async (c) => {
   try {
     const userId = c.get('userId')
@@ -1715,12 +1860,12 @@ app.post('/make-server-f573a585/scan-receipt', requireAuth, async (c) => {
     }
     
     // Check if API key is configured
-    const apiKey = Deno.env.get('GEMINI_API_KEY')
+    const apiKey = Deno.env.get('OPENROUTER_API_KEY')
     if (!apiKey) {
-      console.log('GEMINI_API_KEY not configured, returning error')
+      console.log('OPENROUTER_API_KEY not configured, returning error')
       return c.json({ 
-        error: 'AI receipt scanning is not configured. Please set GEMINI_API_KEY environment variable.',
-        details: 'GEMINI_API_KEY not configured'
+        error: 'AI receipt scanning is not configured. Please set OPENROUTER_API_KEY environment variable.',
+        details: 'OPENROUTER_API_KEY not configured'
       }, 503)
     }
     
@@ -1771,7 +1916,7 @@ CRITICAL RULES:
 8. Return ONLY valid JSON, no markdown, no explanation`
 
     const aiResponse = await callGeminiVisionAPI(base64Data, prompt)
-    console.log('Gemini Vision response:', aiResponse)
+    console.log('OpenRouter Vision response:', aiResponse)
     
     // Parse the AI response
     const cleanResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
@@ -1819,10 +1964,22 @@ CRITICAL RULES:
   }
 })
 
-// AI-Powered Spending Insights
+// AI-Powered Spending Insights with caching
 app.get('/make-server-f573a585/ai/insights', requireAuth, async (c) => {
   try {
     const userId = c.get('userId')
+    
+    // Check cache first (30 minute cache - increased for free tier rate limits)
+    const cacheKey = `ai_insights:${userId}`
+    const cached = await kv.get(cacheKey)
+    if (cached.value) {
+      const cacheAge = Date.now() - new Date(cached.value.cachedAt).getTime()
+      if (cacheAge < 30 * 60 * 1000) { // 30 minutes
+        console.log(`Returning cached insights (age: ${Math.round(cacheAge / 1000)}s)`)
+        return c.json(cached.value.data)
+      }
+    }
+    
     const expenses = await kv.get(`user:${userId}:personal_expenses`)
     const budgets = await kv.get(`user:${userId}:budgets`)
     const expenseList = expenses.value || []
@@ -1843,9 +2000,9 @@ app.get('/make-server-f573a585/ai/insights', requireAuth, async (c) => {
     }
     
     // Check if API key is configured
-    const apiKey = Deno.env.get('GEMINI_API_KEY')
+    const apiKey = Deno.env.get('OPENROUTER_API_KEY')
     if (!apiKey) {
-      console.log('GEMINI_API_KEY not configured, returning basic stats without AI insights')
+      console.log('OPENROUTER_API_KEY not configured, returning basic stats without AI insights')
       // Calculate basic stats without AI
       const now = new Date()
       const thisMonth = expenseList.filter((exp: any) => {
@@ -1864,7 +2021,7 @@ app.get('/make-server-f573a585/ai/insights', requireAuth, async (c) => {
         insights: [{
           type: 'info',
           severity: 'info',
-          message: 'AI insights are not available. Configure GEMINI_API_KEY for advanced analytics.',
+          message: 'AI insights are not available. Configure OPENROUTER_API_KEY for advanced analytics.',
           value: 0
         }],
         summary: `You have ${expenseList.length} expenses tracked. AI insights require configuration.`,
@@ -1985,7 +2142,7 @@ Be specific, actionable, and supportive. Use Bangladeshi Taka (৳) for amounts.
       })
     }
     
-    return c.json({
+    const result = {
       ...insights,
       generatedAt: new Date().toISOString(),
       stats: {
@@ -1994,7 +2151,15 @@ Be specific, actionable, and supportive. Use Bangladeshi Taka (৳) for amounts.
         change: totalThisMonth - totalLastMonth,
         changePercentage: totalLastMonth > 0 ? ((totalThisMonth - totalLastMonth) / totalLastMonth * 100) : 0
       }
+    }
+    
+    // Cache the result
+    await kv.set(cacheKey, {
+      data: result,
+      cachedAt: new Date().toISOString()
     })
+    
+    return c.json(result)
   } catch (error: any) {
     console.error('Error in insights endpoint:', error.message, error.stack)
     // Return a valid response even on error

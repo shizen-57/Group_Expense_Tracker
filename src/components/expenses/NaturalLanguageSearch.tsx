@@ -60,7 +60,7 @@ export function NaturalLanguageSearch({ onSearch }: NaturalLanguageSearchProps) 
         )}
 
         {analysisResult.text && (
-          <Card className="border-2 border-emerald-200 dark:border-emerald-800 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950">
+          <Card className="border-2 border-emerald-200 bg-white">
             <CardContent className="p-6">
               <div className="flex items-start gap-4">
                 <div className="p-3 rounded-xl bg-emerald-500/20">
@@ -93,7 +93,7 @@ export function NaturalLanguageSearch({ onSearch }: NaturalLanguageSearchProps) 
                   const percentage = data.total / Object.values(analysisResult.breakdown).reduce((sum: number, d: any) => sum + d.total, 0) * 100
 
                   return (
-                    <div key={category} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+                    <div key={category} className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-lg ${categoryInfo.bgColor}`}>
                           <CategoryIcon className={`h-4 w-4 ${categoryInfo.color}`} />
@@ -147,7 +147,7 @@ export function NaturalLanguageSearch({ onSearch }: NaturalLanguageSearchProps) 
                 </div>
               </div>
               {analysisResult.percentage !== undefined && (
-                <div className="mt-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 text-center">
+                <div className="mt-4 p-3 rounded-lg bg-gray-50 text-center">
                   <p className="text-sm">
                     <span className="font-semibold">{Math.abs(analysisResult.percentage).toFixed(1)}%</span>
                     {analysisResult.difference > 0 ? ' more' : ' less'}
@@ -167,7 +167,7 @@ export function NaturalLanguageSearch({ onSearch }: NaturalLanguageSearchProps) 
               </h4>
               <div className="space-y-2">
                 {Object.entries(analysisResult.monthlyData).map(([month, data]: [string, any]) => (
-                  <div key={month} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+                  <div key={month} className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
                     <span className="font-medium">{month}</span>
                     <div className="text-right">
                       <p className="font-bold">৳{data.total.toFixed(2)}</p>
@@ -192,7 +192,7 @@ export function NaturalLanguageSearch({ onSearch }: NaturalLanguageSearchProps) 
                   return (
                     <div 
                       key={expense.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800"
+                      className="flex items-center justify-between p-3 rounded-lg bg-gray-50"
                     >
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-lg ${categoryInfo.bgColor}`}>
@@ -305,7 +305,7 @@ export function NaturalLanguageSearch({ onSearch }: NaturalLanguageSearchProps) 
 
       {/* Results */}
       {hasSearched && (
-        <Card className="border-0 shadow-lg">
+        <Card className="border-0 shadow-lg bg-white">
           <CardContent className="p-6">
             {isSearching ? (
               <div className="text-center py-8 text-muted-foreground">

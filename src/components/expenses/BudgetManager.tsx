@@ -310,7 +310,7 @@ export function BudgetManager({ budgets, expenses, onCreateBudget, onDeleteBudge
       </div>
 
       {currentBudgets.length === 0 ? (
-        <Card className="border-0 shadow-xl">
+        <Card className="border-0 shadow-xl bg-white">
           <CardContent className="py-12">
             <div className="text-center">
               <div className="inline-flex p-6 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 mb-4">
@@ -336,10 +336,10 @@ export function BudgetManager({ budgets, expenses, onCreateBudget, onDeleteBudge
                 key={budget.id}
                 className={`border-0 shadow-lg ${
                   isOverBudget 
-                    ? 'bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950 dark:to-orange-950'
+                    ? 'bg-gradient-to-br from-red-50 to-orange-50'
                     : isNearLimit
-                    ? 'bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-950 dark:to-orange-950'
-                    : 'bg-white dark:bg-gray-800'
+                    ? 'bg-gradient-to-br from-yellow-50 to-orange-50'
+                    : 'bg-white'
                 }`}
               >
                 <CardContent className="p-6">
@@ -451,10 +451,10 @@ export function BudgetManager({ budgets, expenses, onCreateBudget, onDeleteBudge
                       onClick={() => !hasExistingBudget && toggleCategory(cat.id)}
                       className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
                         hasExistingBudget
-                          ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 opacity-50 cursor-not-allowed'
+                          ? 'bg-gray-100 border-gray-300 opacity-50 cursor-not-allowed'
                           : isSelected
-                          ? 'bg-emerald-50 dark:bg-emerald-950 border-emerald-500'
-                          : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-emerald-300'
+                          ? 'bg-emerald-50 border-emerald-500'
+                          : 'bg-white border-gray-200 hover:border-emerald-300'
                       }`}
                     >
                       <input
@@ -542,7 +542,7 @@ export function BudgetManager({ budgets, expenses, onCreateBudget, onDeleteBudge
                       return (
                         <div 
                           key={category}
-                          className="flex items-center justify-between p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow"
+                          className="flex items-center justify-between p-4 rounded-lg bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
                         >
                           <div className="flex items-center gap-3">
                             <div className={`p-2 rounded-lg ${categoryInfo.bgColor}`}>

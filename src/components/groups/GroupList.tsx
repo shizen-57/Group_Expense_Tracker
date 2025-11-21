@@ -50,7 +50,7 @@ export function GroupList({ groups, onSelectGroup }: GroupListProps) {
       {groups.map((group, index) => (
         <Card
           key={group.id}
-          className="cursor-pointer card-hover border-0 shadow-xl bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 overflow-hidden relative group"
+          className="cursor-pointer card-hover border-0 shadow-xl bg-white overflow-hidden relative group"
           onClick={() => onSelectGroup(group.id)}
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500" />

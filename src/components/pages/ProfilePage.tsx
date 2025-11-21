@@ -1,5 +1,6 @@
 import { ProfileCard } from '../profile/ProfileCard'
 import { FriendList } from '../friends/FriendList'
+import { NotificationPreferences } from '../notifications/NotificationPreferences'
 import { Card, CardContent, CardHeader } from '../ui/card'
 import { Users } from 'lucide-react'
 
@@ -33,7 +34,10 @@ export function ProfilePage({ user, friends, loading, onLogout, onSettle }: Prof
       <h2>Profile</h2>
       <ProfileCard user={user} onLogout={onLogout} />
       
-      <Card className="bg-gradient-to-br from-emerald-50/50 to-teal-50/50 border-emerald-200/30 backdrop-blur-sm">
+      {/* Notification Preferences */}
+      <NotificationPreferences userId={user.id} />
+      
+      <Card className="bg-white backdrop-blur-sm">
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg">

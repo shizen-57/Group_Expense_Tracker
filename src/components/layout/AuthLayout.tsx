@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react'
-import { Loader2, Sparkles } from 'lucide-react'
+import { Loader2, Sparkles, Info } from 'lucide-react'
 import { LoginForm } from '../auth/LoginForm'
 import { SignupForm } from '../auth/SignupForm'
 import { ForgotPasswordForm } from '../auth/ForgotPasswordForm'
@@ -50,7 +50,34 @@ export function AuthLayout({ authMode, isAuthenticating, onLogin, onSignup, onRe
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
+              className="space-y-4"
             >
+              {authMode === 'login' && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/60 rounded-2xl p-4 backdrop-blur-sm"
+                >
+                  <div className="flex items-start gap-3">
+                    <Info className="h-5 w-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-left">
+                      <p className="text-sm font-medium text-gray-800 mb-1">
+                        👋 First time here?
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        You need to create an account first. Click{' '}
+                        <button 
+                          onClick={() => onSwitchMode('signup')} 
+                          className="font-semibold gradient-text underline hover:no-underline"
+                        >
+                          "Sign up"
+                        </button>{' '}
+                        below to get started.
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
               {authMode === 'login' ? (
                 <LoginForm
                   onLogin={onLogin}

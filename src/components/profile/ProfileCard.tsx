@@ -17,7 +17,7 @@ interface ProfileCardProps {
 
 export function ProfileCard({ user, onLogout }: ProfileCardProps) {
   return (
-    <Card className="max-w-2xl mx-auto">
+    <Card className="max-w-2xl mx-auto bg-white">
       <CardHeader>
         <CardTitle>Profile</CardTitle>
       </CardHeader>

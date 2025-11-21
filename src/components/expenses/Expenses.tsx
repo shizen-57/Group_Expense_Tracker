@@ -9,7 +9,6 @@ import { AddExpenseDialog } from './AddExpenseDialog'
 import { ReceiptScannerDialog } from './ReceiptScannerDialog'
 import { NaturalLanguageSearch } from './NaturalLanguageSearch'
 import { TrendAnalytics } from './TrendAnalytics'
-import { AIInsights } from './AIInsights'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 
 interface ExpensesProps {
@@ -103,11 +102,6 @@ export function Expenses({
 
       {/* Natural Language Search */}
       <NaturalLanguageSearch onSearch={onSearch} />
-
-      {/* AI Insights */}
-      {onGetAIInsights && (
-        <AIInsights onFetchInsights={onGetAIInsights} />
-      )}
 
       {/* Monthly Summary */}
       <MonthlySpendingSummary expenses={expenses} budgets={budgets} stats={stats} />

@@ -1,6 +1,6 @@
 # Personal Expense Manager with AI
 
-A comprehensive personal expense management application with AI-powered features, built with React, TypeScript, Tailwind CSS, Supabase backend, and Google Gemini AI.
+A comprehensive personal expense management application with AI-powered features, built with React, TypeScript, Tailwind CSS, Supabase backend, and OpenRouter AI.
 
 ---
 
@@ -40,7 +40,7 @@ Ask questions about your finances in plain English:
 - "groceries over ৳500"
 - "food spending this month"
 
-Powered by **Google Gemini Pro 2.0** - understands context, performs calculations, generates insights!
+Powered by **OpenRouter AI** - understands context, performs calculations, generates insights!
 
 ### 📸 Advanced AI Receipt Scanner
 Upload receipt photos for **90%+ accurate** extraction:
@@ -171,7 +171,7 @@ Auto-generated insights help you make better financial decisions!
 - **Deno** - Runtime for edge functions
 
 ### AI/ML
-- **Google Gemini Pro 2.0 Flash** - Natural language understanding
+- **OpenRouter AI** - Natural language understanding
 - **Gemini Vision API** - OCR and image analysis
 
 ## Architecture
@@ -236,7 +236,7 @@ Frontend (React) → Server (Hono Edge Function) → Database (Supabase KV Store
 - Node.js 18+
 - Supabase account
 - Supabase project with environment variables configured
-- Google Gemini API key (for AI features)
+- OpenRouter API key (for AI features)
 
 ### Installation
 
@@ -244,8 +244,8 @@ Frontend (React) → Server (Hono Edge Function) → Database (Supabase KV Store
 2. The application is already configured with Supabase integration
 3. Set up AI features:
    ```bash
-   # Set Gemini API key
-   supabase secrets set GEMINI_API_KEY=your_api_key_here
+   # Set OpenRouter API key
+   supabase secrets set OPENROUTER_API_KEY=your_api_key_here
    
    # Deploy Edge Function
    supabase functions deploy make-server-f573a585

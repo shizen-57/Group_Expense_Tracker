@@ -27,21 +27,37 @@ export function AIInsights({ onFetchInsights }: AIInsightsProps) {
     try {
       const data = await onFetchInsights()
       console.log('AI Insights fetched:', data)
-      setInsights(data)
+      
+      // Check if there's an error field in the response
+      if (data.error) {
+        console.warn('AI insights returned with error:', data.error)
+        // Still use the data if it has basic stats
+        setInsights(data)
+      } else {
+        setInsights(data)
+      }
     } catch (error: any) {
       console.error('Failed to fetch insights:', error.message || error)
       // Set fallback data on error
       setInsights({
         insights: [{
           type: 'info',
-          severity: 'info',
-          message: 'AI insights are temporarily unavailable. This could be due to API configuration or network issues.',
+          severity: 'warning',
+          message: error.message.includes('Too Many Requests') 
+            ? '⏱️ Rate limit reached. OpenRouter free tier allows 6 AI calls per minute. Please wait 5-10 seconds and try again.' 
+            : 'AI insights are temporarily unavailable. This could be due to API rate limits or network issues.',
           value: 0
         }],
-        summary: 'Unable to generate AI insights at the moment. Please check your GEMINI_API_KEY configuration and try again later.',
-        recommendations: [{
+        summary: error.message.includes('Too Many Requests')
+          ? 'Too many AI requests. The app uses 15-minute caching and limits calls to reduce API usage. Cached results will be served when available.'
+          : 'Unable to generate AI insights at the moment. Basic statistics are shown below.',
+        recommendations: error.message.includes('Too Many Requests') ? [{
+          priority: 'medium',
+          action: 'Wait 10-15 seconds before making another AI request. The app caches results for 15 minutes to minimize API calls.',
+          potential_savings: 0
+        }] : [{
           priority: 'low',
-          action: 'Configure your Google Gemini API key to enable AI-powered insights and recommendations.',
+          action: 'AI features will work once the rate limit resets. Try refreshing in a few minutes.',
           potential_savings: 0
         }],
         patterns: [],
@@ -98,7 +114,7 @@ export function AIInsights({ onFetchInsights }: AIInsightsProps) {
   }
 
   return (
-    <Card className="border-0 shadow-xl bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950">
+    <Card className="border-0 shadow-xl bg-white">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -131,9 +147,22 @@ export function AIInsights({ onFetchInsights }: AIInsightsProps) {
           </div>
         ) : insights ? (
           <>
+            {/* Error/Warning Message */}
+            {insights.error && (
+              <div className="p-4 rounded-xl bg-yellow-50 border border-yellow-200">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-yellow-900 mb-1">AI Features Limited</p>
+                    <p className="text-xs text-yellow-700">{insights.error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Summary */}
             {insights.summary && (
-              <div className="p-4 rounded-xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-purple-200 dark:border-purple-800">
+              <div className={`p-4 rounded-xl backdrop-blur-sm border ${insights.error ? 'bg-gray-50 border-gray-200' : 'bg-white border-purple-200'}`}>
                 <p className="text-sm leading-relaxed">{insights.summary}</p>
               </div>
             )}
@@ -141,11 +170,11 @@ export function AIInsights({ onFetchInsights }: AIInsightsProps) {
             {/* Stats Overview */}
             {insights.stats && (
               <div className="grid grid-cols-2 gap-3">
-                <div className="p-4 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+                <div className="p-4 rounded-xl bg-white border border-gray-200">
                   <p className="text-sm text-muted-foreground mb-1">This Month</p>
                   <p className="text-2xl font-bold">৳{insights.stats.thisMonth.toFixed(2)}</p>
                 </div>
-                <div className="p-4 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+                <div className="p-4 rounded-xl bg-white border border-gray-200">
                   <p className="text-sm text-muted-foreground mb-1">vs Last Month</p>
                   <div className="flex items-center gap-2">
                     <p className="text-2xl font-bold">
@@ -212,7 +241,7 @@ export function AIInsights({ onFetchInsights }: AIInsightsProps) {
                   {insights.recommendations.map((rec: any, index: number) => (
                     <div 
                       key={index}
-                      className="p-4 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+                      className="p-4 rounded-xl bg-white border border-gray-200"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1">
@@ -246,7 +275,7 @@ export function AIInsights({ onFetchInsights }: AIInsightsProps) {
                   {insights.patterns.map((pattern: any, index: number) => (
                     <div 
                       key={index}
-                      className="p-3 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+                      className="p-3 rounded-lg bg-white border border-gray-200"
                     >
                       <p className="text-sm font-medium mb-1">{pattern.pattern}</p>
                       <p className="text-xs text-muted-foreground">{pattern.suggestion}</p>

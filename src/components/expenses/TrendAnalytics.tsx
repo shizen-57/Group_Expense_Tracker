@@ -73,7 +73,7 @@ export function TrendAnalytics({ trends, expenses }: TrendAnalyticsProps) {
 
       {/* Trend Summary Cards */}
       <div className="grid gap-6 md:grid-cols-2">
-        <Card className="border-0 shadow-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950">
+        <Card className="border-0 shadow-xl bg-white">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
               <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600">
@@ -96,7 +96,7 @@ export function TrendAnalytics({ trends, expenses }: TrendAnalyticsProps) {
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
+        <Card className="border-0 shadow-xl bg-white">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
               <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600">
@@ -124,7 +124,7 @@ export function TrendAnalytics({ trends, expenses }: TrendAnalyticsProps) {
       </div>
 
       {/* Monthly Spending Trend */}
-      <Card className="border-0 shadow-xl">
+      <Card className="border-0 shadow-xl bg-white">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600">
@@ -158,7 +158,7 @@ export function TrendAnalytics({ trends, expenses }: TrendAnalyticsProps) {
       </Card>
 
       {/* Daily Spending Pattern (Last 30 Days) */}
-      <Card className="border-0 shadow-xl">
+      <Card className="border-0 shadow-xl bg-white">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600">
@@ -181,7 +181,7 @@ export function TrendAnalytics({ trends, expenses }: TrendAnalyticsProps) {
       </Card>
 
       {/* Transaction Count Trend */}
-      <Card className="border-0 shadow-xl">
+      <Card className="border-0 shadow-xl bg-white">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <div className="p-2 rounded-xl bg-gradient-to-br from-orange-500 to-red-600">

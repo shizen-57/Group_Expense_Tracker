@@ -10,14 +10,17 @@ import { GroupsPage } from './components/pages/GroupsPage'
 import { FriendsPage } from './components/pages/FriendsPage'
 import { ActivityPage } from './components/pages/ActivityPage'
 import { ProfilePage } from './components/pages/ProfilePage'
+import { AIInsightsPage } from './components/pages/AIInsightsPage'
 import { useAuth } from './hooks/useAuth'
 import { useGroups } from './hooks/useGroups'
 import { useFriends } from './hooks/useFriends'
 import { useDashboard } from './hooks/useDashboard'
 import { useActivity } from './hooks/useActivity'
 import { usePersonalExpenses } from './hooks/usePersonalExpenses'
+import { useNotificationSystem } from './hooks/useNotificationSystem'
+import { defaultNotificationPreferences } from './utils/notifications/NotificationFactory'
 
-type Page = 'dashboard' | 'expenses' | 'groups' | 'friends' | 'activity' | 'profile'
+type Page = 'dashboard' | 'expenses' | 'groups' | 'friends' | 'activity' | 'profile' | 'ai-insights'
 
 export default function App() {
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot-password'>('login')
@@ -30,6 +33,16 @@ export default function App() {
   const dashboard = useDashboard(accessToken)
   const activity = useActivity(accessToken)
   const personalExpenses = usePersonalExpenses(accessToken)
+  
+  // Initialize notification system (only when user is logged in)
+  useNotificationSystem({
+    userId: user?.id || '',
+    user,
+    preferences: user?.id ? {
+      ...defaultNotificationPreferences,
+      userId: user.id
+    } : undefined
+  })
 
   // Fetch data based on current page
   useEffect(() => {
@@ -58,6 +71,12 @@ export default function App() {
           break
         case 'profile':
           await friends.fetchFriends()
+          break
+        case 'ai-insights':
+          await personalExpenses.fetchExpenses()
+          await personalExpenses.fetchBudgets()
+          await personalExpenses.fetchTrends()
+          await dashboard.fetchDashboard()
           break
       }
     }
@@ -196,6 +215,12 @@ export default function App() {
             loading={friends.loading}
             onLogout={handleLogout}
             onSettle={friends.handleSettleDebt}
+          />
+        )}
+
+        {currentPage === 'ai-insights' && (
+          <AIInsightsPage
+            onGetAIInsights={personalExpenses.getAIInsights}
           />
         )}
       </main>

@@ -25,8 +25,11 @@ export function LoginForm({ onLogin, onSwitchToSignup, onForgotPassword }: Login
     setLoading(true)
 
     try {
+      console.log('LoginForm: Attempting login with email:', email)
       await onLogin(email, password)
+      console.log('LoginForm: Login successful')
     } catch (err: any) {
+      console.error('LoginForm: Login error:', err)
       setError(err.message || 'Failed to login')
     } finally {
       setLoading(false)
@@ -112,9 +115,20 @@ export function LoginForm({ onLogin, onSwitchToSignup, onForgotPassword }: Login
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm"
+                className="p-4 rounded-xl bg-red-50 border border-red-200"
               >
-                {error}
+                <p className="text-red-600 text-sm font-medium">{error}</p>
+                {error.includes('Invalid email or password') && (
+                  <p className="text-xs text-red-500 mt-2">
+                    💡 Don't have an account yet? Click <button 
+                      type="button"
+                      onClick={onSwitchToSignup}
+                      className="font-semibold underline hover:text-red-700"
+                    >
+                      "Sign up"
+                    </button> below to create one first.
+                  </p>
+                )}
               </motion.div>
             )}
 

@@ -151,7 +151,7 @@ export function Dashboard({ stats, onNavigate }: DashboardProps) {
           return (
             <Card 
               key={index} 
-              className="card-hover border-0 shadow-xl bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 overflow-hidden relative"
+              className="card-hover border-0 shadow-xl bg-white overflow-hidden relative"
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-full -mr-16 -mt-16" />
               <CardContent className="p-6 relative z-10">
@@ -184,21 +184,21 @@ export function Dashboard({ stats, onNavigate }: DashboardProps) {
 
       {/* Balance Summary */}
       <div className="grid gap-6 md:grid-cols-2">
-        <Card className="card-hover border-0 shadow-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950 overflow-hidden relative">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-full -mr-20 -mt-20" />
+        <Card className="card-hover border-0 shadow-xl bg-white overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-full -mr-20 -mt-20" />
           <CardHeader className="relative z-10">
             <CardTitle className="flex items-center gap-2">
               <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg">
                 <TrendingUp className="h-5 w-5 text-white" />
               </div>
-              <span className="text-emerald-700 dark:text-emerald-300">You are owed</span>
+              <span className="text-emerald-700">You are owed</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="relative z-10">
-            <p className="text-5xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">
+            <p className="text-5xl font-bold text-emerald-600 mb-2">
               ৳{stats.totalReceiving.toFixed(2)}
             </p>
-            <p className="text-sm text-emerald-600/70 dark:text-emerald-400/70 mb-6">
+            <p className="text-sm text-emerald-600/70 mb-6">
               Money others owe you
             </p>
             <Button 
@@ -210,21 +210,21 @@ export function Dashboard({ stats, onNavigate }: DashboardProps) {
           </CardContent>
         </Card>
 
-        <Card className="card-hover border-0 shadow-xl bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950 dark:to-orange-950 overflow-hidden relative">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-red-500/20 to-orange-500/20 rounded-full -mr-20 -mt-20" />
+        <Card className="card-hover border-0 shadow-xl bg-white overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-red-500/10 to-orange-500/10 rounded-full -mr-20 -mt-20" />
           <CardHeader className="relative z-10">
             <CardTitle className="flex items-center gap-2">
               <div className="p-2 rounded-xl bg-gradient-to-br from-red-500 to-orange-600 shadow-lg">
                 <TrendingDown className="h-5 w-5 text-white" />
               </div>
-              <span className="text-red-700 dark:text-red-300">You owe</span>
+              <span className="text-red-700">You owe</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="relative z-10">
-            <p className="text-5xl font-bold text-red-600 dark:text-red-400 mb-2">
+            <p className="text-5xl font-bold text-red-600 mb-2">
               ৳{stats.totalOwed.toFixed(2)}
             </p>
-            <p className="text-sm text-red-600/70 dark:text-red-400/70 mb-6">
+            <p className="text-sm text-red-600/70 mb-6">
               Money you owe others
             </p>
             <Button 
@@ -241,7 +241,7 @@ export function Dashboard({ stats, onNavigate }: DashboardProps) {
       {recentActivities.length > 0 && (
         <div className="grid gap-6 md:grid-cols-2">
           {/* Category Breakdown Pie Chart */}
-          <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-purple-50/30 dark:from-gray-800 dark:to-purple-950/30">
+          <Card className="border-0 shadow-xl bg-white">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 shadow-lg">
@@ -288,7 +288,7 @@ export function Dashboard({ stats, onNavigate }: DashboardProps) {
           </Card>
 
           {/* Spending Summary Bar Chart */}
-          <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-blue-50/30 dark:from-gray-800 dark:to-blue-950/30">
+          <Card className="border-0 shadow-xl bg-white">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg">
@@ -319,7 +319,7 @@ export function Dashboard({ stats, onNavigate }: DashboardProps) {
       )}
 
       {/* Recent Activity */}
-      <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+      <Card className="border-0 shadow-xl bg-white/95 backdrop-blur-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="flex items-center gap-2">
             <div className="p-2 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg">
@@ -353,7 +353,7 @@ export function Dashboard({ stats, onNavigate }: DashboardProps) {
                 return (
                   <div 
                     key={activity.id} 
-                    className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 hover:shadow-md transition-all card-hover border border-gray-100 dark:border-gray-700"
+                    className="flex items-center justify-between p-4 rounded-2xl bg-white hover:shadow-md transition-all card-hover border border-gray-100"
                   >
                     <div className="flex items-center gap-4">
                       <div className={`p-3 rounded-xl bg-gradient-to-br ${categoryInfo.bgColor} shadow-md`}>

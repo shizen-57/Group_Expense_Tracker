@@ -79,7 +79,7 @@ export function MonthlySpendingSummary({ expenses, budgets, stats }: MonthlySpen
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       {/* Monthly Total Card */}
-      <Card className="border-0 shadow-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950 overflow-hidden relative">
+      <Card className="border-0 shadow-xl bg-white overflow-hidden relative">
         <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-full -mr-20 -mt-20" />
         <CardHeader className="relative z-10">
           <CardTitle className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
@@ -110,10 +110,10 @@ export function MonthlySpendingSummary({ expenses, budgets, stats }: MonthlySpen
       {/* Budget Progress Card */}
       <Card className={`border-0 shadow-xl overflow-hidden relative ${
         isOverBudget 
-          ? 'bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950 dark:to-orange-950'
+          ? 'bg-gradient-to-br from-red-50 to-orange-50'
           : isNearBudget
-          ? 'bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-950 dark:to-orange-950'
-          : 'bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950'
+          ? 'bg-gradient-to-br from-yellow-50 to-orange-50'
+          : 'bg-gradient-to-br from-blue-50 to-indigo-50'
       }`}>
         <div className={`absolute top-0 right-0 w-40 h-40 rounded-full -mr-20 -mt-20 ${
           isOverBudget 
@@ -179,7 +179,7 @@ export function MonthlySpendingSummary({ expenses, budgets, stats }: MonthlySpen
       </Card>
 
       {/* Category Breakdown Chart */}
-      <Card className="border-0 shadow-xl bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950">
+      <Card className="border-0 shadow-xl bg-white">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
             <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 shadow-lg">

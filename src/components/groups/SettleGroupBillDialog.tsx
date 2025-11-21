@@ -106,8 +106,8 @@ export function SettleGroupBillDialog({
                 key={member.id}
                 className={`p-3 rounded-lg border ${
                   member.id === currentUserId 
-                    ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200' 
-                    : 'bg-gray-50 dark:bg-gray-800'
+                    ? 'bg-emerald-50 border-emerald-200' 
+                    : 'bg-gray-50'
                 }`}
               >
                 <div className="flex items-center justify-between">
