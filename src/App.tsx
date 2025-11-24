@@ -1,38 +1,51 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { motion } from 'motion/react'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from './components/ui/sonner'
 import { LoadingScreen } from './components/layout/LoadingScreen'
 import { AuthLayout } from './components/layout/AuthLayout'
 import { Navigation } from './components/layout/Navigation'
-import { DashboardPage } from './components/pages/DashboardPage'
-import { ExpensesPage } from './components/pages/ExpensesPage'
-import { GroupsPage } from './components/pages/GroupsPage'
-import { FriendsPage } from './components/pages/FriendsPage'
-import { ActivityPage } from './components/pages/ActivityPage'
-import { ProfilePage } from './components/pages/ProfilePage'
-import { AIInsightsPage } from './components/pages/AIInsightsPage'
 import { useAuth } from './hooks/useAuth'
-import { useGroups } from './hooks/useGroups'
-import { useFriends } from './hooks/useFriends'
-import { useDashboard } from './hooks/useDashboard'
-import { useActivity } from './hooks/useActivity'
-import { usePersonalExpenses } from './hooks/usePersonalExpenses'
+import { useOptimizedGroups } from './hooks/useOptimizedGroups'
+import { useOptimizedFriends } from './hooks/useOptimizedFriends'
+import { useOptimizedDashboard } from './hooks/useOptimizedDashboard'
+import { useOptimizedActivity } from './hooks/useOptimizedActivity'
+import { useOptimizedPersonalExpenses } from './hooks/useOptimizedPersonalExpenses'
 import { useNotificationSystem } from './hooks/useNotificationSystem'
 import { defaultNotificationPreferences } from './utils/notifications/NotificationFactory'
+import { queryClient } from './utils/queryClient'
+
+// Lazy load pages for better initial load performance
+const DashboardPage = lazy(() => import('./components/pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
+const ExpensesPage = lazy(() => import('./components/pages/ExpensesPage').then(m => ({ default: m.ExpensesPage })))
+const GroupsPage = lazy(() => import('./components/pages/GroupsPage').then(m => ({ default: m.GroupsPage })))
+const FriendsPage = lazy(() => import('./components/pages/FriendsPage').then(m => ({ default: m.FriendsPage })))
+const ActivityPage = lazy(() => import('./components/pages/ActivityPage').then(m => ({ default: m.ActivityPage })))
+const ProfilePage = lazy(() => import('./components/pages/ProfilePage').then(m => ({ default: m.ProfilePage })))
+const AIInsightsPage = lazy(() => import('./components/pages/AIInsightsPage').then(m => ({ default: m.AIInsightsPage })))
 
 type Page = 'dashboard' | 'expenses' | 'groups' | 'friends' | 'activity' | 'profile' | 'ai-insights'
 
-export default function App() {
+// Page loading fallback
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center py-20">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+    </div>
+  )
+}
+
+function AppContent() {
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot-password'>('login')
   const [currentPage, setCurrentPage] = useState<Page>('expenses')
   
-  // Custom hooks for state management
+  // Custom hooks for state management with React Query
   const { accessToken, user, isAuthenticating, isCheckingSession, handleLogin, handleSignup, handleLogout } = useAuth()
-  const groups = useGroups(accessToken)
-  const friends = useFriends(accessToken)
-  const dashboard = useDashboard(accessToken)
-  const activity = useActivity(accessToken)
-  const personalExpenses = usePersonalExpenses(accessToken)
+  const groups = useOptimizedGroups(accessToken)
+  const friends = useOptimizedFriends(accessToken)
+  const dashboard = useOptimizedDashboard(accessToken)
+  const activity = useOptimizedActivity(accessToken)
+  const personalExpenses = useOptimizedPersonalExpenses(accessToken)
   
   // Initialize notification system (only when user is logged in)
   useNotificationSystem({
@@ -43,46 +56,6 @@ export default function App() {
       userId: user.id
     } : undefined
   })
-
-  // Fetch data based on current page
-  useEffect(() => {
-    if (!accessToken) return
-
-    const fetchData = async () => {
-      switch (currentPage) {
-        case 'dashboard':
-          await dashboard.fetchDashboard()
-          break
-        case 'expenses':
-          await personalExpenses.fetchExpenses()
-          await personalExpenses.fetchBudgets()
-          await personalExpenses.fetchTrends()
-          await dashboard.fetchDashboard()
-          break
-        case 'groups':
-          await groups.fetchGroups()
-          await friends.fetchFriends()
-          break
-        case 'friends':
-          await friends.fetchFriends()
-          break
-        case 'activity':
-          await activity.fetchActivity()
-          break
-        case 'profile':
-          await friends.fetchFriends()
-          break
-        case 'ai-insights':
-          await personalExpenses.fetchExpenses()
-          await personalExpenses.fetchBudgets()
-          await personalExpenses.fetchTrends()
-          await dashboard.fetchDashboard()
-          break
-      }
-    }
-
-    fetchData()
-  }, [currentPage, accessToken])
 
   // Activity group click handler
   const handleActivityGroupClick = (groupId: string) => {
@@ -134,98 +107,120 @@ export default function App() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="min-h-screen"
+      className="min-h-screen bg-gray-50"
     >
       <Navigation currentPage={currentPage} onNavigate={setCurrentPage} />
       
-      <main className="max-w-7xl mx-auto px-4 py-8 pb-20">
+      <main className="px-4 py-8 pb-20">
         {currentPage === 'dashboard' && (
-          <DashboardPage 
-            stats={dashboard.dashboardStats}
-            loading={dashboard.loading}
-            onNavigate={setCurrentPage}
-          />
+          <Suspense fallback={<PageLoader />}>
+            <DashboardPage 
+              stats={dashboard.dashboardStats}
+              loading={dashboard.loading}
+              onNavigate={setCurrentPage}
+            />
+          </Suspense>
         )}
 
         {currentPage === 'expenses' && (
-          <ExpensesPage
-            expenses={personalExpenses.expenses}
-            budgets={personalExpenses.budgets}
-            trends={personalExpenses.trends}
-            stats={dashboard.dashboardStats}
-            loading={personalExpenses.loading}
-            onCreateExpense={personalExpenses.createExpense}
-            onDeleteExpense={personalExpenses.deleteExpense}
-            onCreateBudget={personalExpenses.createBudget}
-            onDeleteBudget={personalExpenses.deleteBudget}
-            onSearch={personalExpenses.searchExpenses}
-            onScanReceipt={personalExpenses.scanReceipt}
-            onGetAIInsights={personalExpenses.getAIInsights}
-          />
+          <Suspense fallback={<PageLoader />}>
+            <ExpensesPage
+              expenses={personalExpenses.expenses}
+              budgets={personalExpenses.budgets}
+              trends={personalExpenses.trends}
+              stats={dashboard.dashboardStats}
+              loading={personalExpenses.loading}
+              onCreateExpense={personalExpenses.createExpense}
+              onDeleteExpense={personalExpenses.deleteExpense}
+              onCreateBudget={personalExpenses.createBudget}
+              onDeleteBudget={personalExpenses.deleteBudget}
+              onSearch={personalExpenses.searchExpenses}
+              onScanReceipt={personalExpenses.scanReceipt}
+              onGetAIInsights={personalExpenses.getAIInsights}
+            />
+          </Suspense>
         )}
 
         {currentPage === 'groups' && (
-          <GroupsPage
-            groups={groups.groups}
-            selectedGroupId={groups.selectedGroupId}
-            selectedGroup={groups.selectedGroup}
-            currentUserId={user.id}
-            loading={groups.loading}
-            friends={friends.friends}
-            onSelectGroup={groups.handleSelectGroup}
-            onCreateGroup={groups.handleCreateGroup}
-            onBackToGroups={groups.handleBackToGroups}
-            onAddMember={groups.handleAddMember}
-            onAddExpense={groups.handleAddExpense}
-            onSimplify={groups.handleSimplifyDebts}
-            onSettleAndSync={groups.handleSettleAndSync}
-            onDeleteGroup={groups.handleDeleteGroup}
-            onAddFriend={friends.handleAddFriend}
-            onAddFriendByEmail={friends.handleAddFriendByEmail}
-            onAddFriendByCode={friends.handleAddFriendByCode}
-            onSearchSuggestions={friends.handleSearchSuggestions}
-          />
+          <Suspense fallback={<PageLoader />}>
+            <GroupsPage
+              groups={groups.groups}
+              selectedGroupId={groups.selectedGroupId}
+              selectedGroup={groups.selectedGroup}
+              currentUserId={user.id}
+              loading={groups.loading}
+              friends={friends.friends}
+              onSelectGroup={groups.handleSelectGroup}
+              onCreateGroup={groups.handleCreateGroup}
+              onBackToGroups={groups.handleBackToGroups}
+              onAddMember={groups.handleAddMember}
+              onAddExpense={groups.handleAddExpense}
+              onSimplify={groups.handleSimplifyDebts}
+              onSettleAndSync={groups.handleSettleAndSync}
+              onDeleteGroup={groups.handleDeleteGroup}
+              onAddFriend={friends.handleAddFriend}
+              onAddFriendByEmail={friends.handleAddFriendByEmail}
+              onAddFriendByCode={friends.handleAddFriendByCode}
+              onSearchSuggestions={friends.handleSearchSuggestions}
+            />
+          </Suspense>
         )}
 
         {currentPage === 'friends' && (
-          <FriendsPage
-            friends={friends.friends}
-            loading={friends.loading}
-            userId={user.id}
-            onAddFriend={friends.handleAddFriend}
-            onAddFriendByEmail={friends.handleAddFriendByEmail}
-            onAddFriendByCode={friends.handleAddFriendByCode}
-            onSearchSuggestions={friends.handleSearchSuggestions}
-            onSettle={friends.handleSettleDebt}
-          />
+          <Suspense fallback={<PageLoader />}>
+            <FriendsPage
+              friends={friends.friends}
+              loading={friends.loading}
+              userId={user.id}
+              onAddFriend={friends.handleAddFriend}
+              onAddFriendByEmail={friends.handleAddFriendByEmail}
+              onAddFriendByCode={friends.handleAddFriendByCode}
+              onSearchSuggestions={friends.handleSearchSuggestions}
+              onSettle={friends.handleSettleDebt}
+            />
+          </Suspense>
         )}
 
         {currentPage === 'activity' && (
-          <ActivityPage
-            activityData={activity.activityData}
-            loading={activity.loading}
-            onGroupClick={handleActivityGroupClick}
-          />
+          <Suspense fallback={<PageLoader />}>
+            <ActivityPage
+              activityData={activity.activityData}
+              loading={activity.loading}
+              onGroupClick={handleActivityGroupClick}
+            />
+          </Suspense>
         )}
 
         {currentPage === 'profile' && (
-          <ProfilePage 
-            user={user} 
-            friends={friends.friends}
-            loading={friends.loading}
-            onLogout={handleLogout}
-            onSettle={friends.handleSettleDebt}
-          />
+          <Suspense fallback={<PageLoader />}>
+            <ProfilePage 
+              user={user} 
+              friends={friends.friends}
+              loading={friends.loading}
+              onLogout={handleLogout}
+              onSettle={friends.handleSettleDebt}
+            />
+          </Suspense>
         )}
 
         {currentPage === 'ai-insights' && (
-          <AIInsightsPage
-            onGetAIInsights={personalExpenses.getAIInsights}
-          />
+          <Suspense fallback={<PageLoader />}>
+            <AIInsightsPage
+              onGetAIInsights={personalExpenses.getAIInsights}
+            />
+          </Suspense>
         )}
       </main>
 
       <Toaster />
     </motion.div>
+  )
+}
+
+export default function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AppContent />
+    </QueryClientProvider>
   )
 }

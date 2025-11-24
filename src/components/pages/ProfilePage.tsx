@@ -30,21 +30,22 @@ interface ProfilePageProps {
 
 export function ProfilePage({ user, friends, loading, onLogout, onSettle }: ProfilePageProps) {
   return (
-    <div className="space-y-6">
-      <h2>Profile</h2>
+    <div className="max-w-7xl mx-auto space-y-6">
+      <h1 className="text-3xl">Profile</h1>
+      
       <ProfileCard user={user} onLogout={onLogout} />
       
       {/* Notification Preferences */}
       <NotificationPreferences userId={user.id} />
       
-      <Card className="bg-white backdrop-blur-sm">
+      <Card className="border border-gray-200 shadow-sm">
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg">
-              <Users className="h-5 w-5 text-white" />
+            <div className="p-2 bg-emerald-100 rounded-lg">
+              <Users className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
-              <h3 className="text-lg">My Friends</h3>
+              <h3 className="font-medium">My Friends</h3>
               <p className="text-sm text-gray-600">
                 {friends.length} {friends.length === 1 ? 'friend' : 'friends'}
               </p>

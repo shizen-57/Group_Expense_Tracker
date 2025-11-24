@@ -23,12 +23,9 @@ export function FriendsPage({
   onSettle,
 }: FriendsPageProps) {
   return (
-    <div className="space-y-8">
+    <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-4xl font-bold gradient-text mb-2">My Friends</h2>
-          <p className="text-muted-foreground">Manage your connections and settle debts</p>
-        </div>
+        <h1 className="text-3xl">My Friends</h1>
         <AddFriendDialog
           onAddFriend={onAddFriend}
           onAddFriendByEmail={onAddFriendByEmail}
@@ -38,12 +35,7 @@ export function FriendsPage({
         />
       </div>
       {loading ? (
-        <div className="text-center py-16">
-          <div className="inline-flex p-6 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 animate-pulse mb-4">
-            <div className="w-12 h-12" />
-          </div>
-          <p className="text-muted-foreground">Loading your friends...</p>
-        </div>
+        <div className="text-center py-12 text-gray-500">Loading your friends...</div>
       ) : (
         <FriendList friends={friends} onSettle={onSettle} />
       )}

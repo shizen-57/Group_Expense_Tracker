@@ -66,33 +66,30 @@ export function Expenses({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-4xl font-bold gradient-text mb-2">My Expenses</h2>
-          <p className="text-muted-foreground">Track your personal spending and manage budgets</p>
-        </div>
+        <h1 className="text-3xl">My Expenses</h1>
         <div className="flex gap-3">
           <Button 
             variant="outline" 
+            size="icon"
             onClick={handleExportCSV}
-            className="border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+            className="rounded-full"
           >
-            <Download className="h-4 w-4 mr-2" />
-            Export
+            <Download className="h-5 w-5" />
           </Button>
           <Button 
             variant="outline"
             onClick={() => setScannerOpen(true)}
-            className="border-purple-200 hover:bg-purple-50 hover:text-purple-700"
+            className="rounded-full px-4"
           >
             <Upload className="h-4 w-4 mr-2" />
             Scan Receipt
           </Button>
           <Button 
             onClick={() => setAddExpenseOpen(true)}
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg"
+            className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-full px-6"
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Expense
@@ -108,10 +105,16 @@ export function Expenses({
 
       {/* Tabs for different views */}
       <Tabs defaultValue="expenses" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
-          <TabsTrigger value="expenses">Expenses</TabsTrigger>
-          <TabsTrigger value="budgets">Budgets</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+        <TabsList className="bg-white rounded-full p-1 shadow-sm border border-gray-200">
+          <TabsTrigger value="expenses" className="rounded-full data-[state=active]:bg-emerald-500 data-[state=active]:text-white">
+            Expenses
+          </TabsTrigger>
+          <TabsTrigger value="budgets" className="rounded-full data-[state=active]:bg-emerald-500 data-[state=active]:text-white">
+            Budgets
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="rounded-full data-[state=active]:bg-emerald-500 data-[state=active]:text-white">
+            Analytics
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="expenses" className="space-y-4">

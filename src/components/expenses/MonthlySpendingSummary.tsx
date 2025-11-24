@@ -1,6 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { Card, CardContent } from '../ui/card'
 import { Progress } from '../ui/progress'
-import { TrendingUp, TrendingDown, Calendar, DollarSign, AlertTriangle } from 'lucide-react'
+import { TrendingUp, TrendingDown, Calendar, DollarSign, AlertTriangle, Target } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { getCategoryInfo } from '../groups/ExpenseCategories'
 
@@ -77,139 +77,131 @@ export function MonthlySpendingSummary({ expenses, budgets, stats }: MonthlySpen
                      'July', 'August', 'September', 'October', 'November', 'December']
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {/* Monthly Total Card */}
-      <Card className="border-0 shadow-xl bg-white overflow-hidden relative">
-        <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-full -mr-20 -mt-20" />
-        <CardHeader className="relative z-10">
-          <CardTitle className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg">
-              <Calendar className="h-5 w-5 text-white" />
-            </div>
-            <span>{monthNames[currentMonth]} Spending</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="relative z-10">
-          <p className="text-5xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">
-            ৳{monthlyTotal.toFixed(2)}
-          </p>
-          <div className="flex items-center gap-2 text-sm">
-            {percentageChange !== 0 && (
-              <div className={`flex items-center gap-1 ${percentageChange > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                {percentageChange > 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                <span>{Math.abs(percentageChange).toFixed(1)}% vs last month</span>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Monthly Total - Hero Card */}
+      <Card className="border-0 shadow-md bg-gradient-to-br from-emerald-100 via-teal-50 to-cyan-50">
+        <CardContent className="p-8">
+          <div className="space-y-4">
+            <div>
+              <div className="text-5xl text-gray-800 mb-2">
+                ৳{monthlyTotal.toFixed(0)}
               </div>
-            )}
+              <div className="text-2xl text-gray-700">{monthNames[currentMonth]} Spending</div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {percentageChange !== 0 && (
+                <div className={`flex items-center gap-1 text-sm ${percentageChange > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                  {percentageChange > 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                  <span>{Math.abs(percentageChange).toFixed(1)}% vs last month</span>
+                </div>
+              )}
+            </div>
+            
+            <p className="text-sm text-gray-600">
+              {monthlyExpenses.length} {monthlyExpenses.length === 1 ? 'transaction' : 'transactions'}
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground mt-2">
-            {monthlyExpenses.length} {monthlyExpenses.length === 1 ? 'transaction' : 'transactions'}
-          </p>
         </CardContent>
       </Card>
 
-      {/* Budget Progress Card */}
-      <Card className={`border-0 shadow-xl overflow-hidden relative ${
+      {/* Budget Progress */}
+      <Card className={`border shadow-sm ${
         isOverBudget 
-          ? 'bg-gradient-to-br from-red-50 to-orange-50'
+          ? 'border-red-200 bg-red-50'
           : isNearBudget
-          ? 'bg-gradient-to-br from-yellow-50 to-orange-50'
-          : 'bg-gradient-to-br from-blue-50 to-indigo-50'
+          ? 'border-yellow-200 bg-yellow-50'
+          : 'border-gray-200 bg-white'
       }`}>
-        <div className={`absolute top-0 right-0 w-40 h-40 rounded-full -mr-20 -mt-20 ${
-          isOverBudget 
-            ? 'bg-gradient-to-br from-red-500/20 to-orange-500/20'
-            : isNearBudget
-            ? 'bg-gradient-to-br from-yellow-500/20 to-orange-500/20'
-            : 'bg-gradient-to-br from-blue-500/20 to-indigo-500/20'
-        }`} />
-        <CardHeader className="relative z-10">
-          <CardTitle className={`flex items-center gap-2 ${
-            isOverBudget 
-              ? 'text-red-700 dark:text-red-300'
-              : isNearBudget
-              ? 'text-yellow-700 dark:text-yellow-300'
-              : 'text-blue-700 dark:text-blue-300'
-          }`}>
-            <div className={`p-2 rounded-xl shadow-lg ${
-              isOverBudget
-                ? 'bg-gradient-to-br from-red-500 to-orange-600'
-                : isNearBudget
-                ? 'bg-gradient-to-br from-yellow-500 to-orange-600'
-                : 'bg-gradient-to-br from-blue-500 to-indigo-600'
-            }`}>
-              {isOverBudget ? <AlertTriangle className="h-5 w-5 text-white" /> : <DollarSign className="h-5 w-5 text-white" />}
-            </div>
-            <span>Budget Progress</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="relative z-10">
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div className="text-sm text-gray-600">Budget Progress</div>
+            {isOverBudget ? (
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+            ) : isNearBudget ? (
+              <AlertTriangle className="h-5 w-5 text-yellow-600" />
+            ) : (
+              <Target className="h-5 w-5 text-gray-400" />
+            )}
+          </div>
+          
           {totalBudget > 0 ? (
-            <>
-              <div className="mb-4">
-                <div className="flex justify-between text-sm mb-2">
-                  <span>{budgetPercentage.toFixed(0)}% used</span>
-                  <span className="font-medium">৳{monthlyTotal.toFixed(2)} / ৳{totalBudget.toFixed(2)}</span>
+            <div className="space-y-3">
+              <div>
+                <div className="text-2xl mb-1">{budgetPercentage.toFixed(0)}%</div>
+                <div className="text-xs text-gray-500">
+                  ৳{monthlyTotal.toFixed(0)} / ৳{totalBudget.toFixed(0)}
                 </div>
-                <Progress value={Math.min(budgetPercentage, 100)} className="h-3" />
               </div>
+              
+              <Progress 
+                value={Math.min(budgetPercentage, 100)} 
+                className={`h-2 ${
+                  isOverBudget ? 'bg-red-200' : isNearBudget ? 'bg-yellow-200' : 'bg-gray-200'
+                }`}
+              />
+              
               {isOverBudget && (
-                <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
-                  <AlertTriangle className="h-4 w-4" />
-                  <span>Over budget by ৳{(monthlyTotal - totalBudget).toFixed(2)}</span>
-                </div>
-              )}
-              {isNearBudget && (
-                <div className="flex items-center gap-2 text-sm text-yellow-600 dark:text-yellow-400">
-                  <AlertTriangle className="h-4 w-4" />
-                  <span>Approaching budget limit</span>
-                </div>
-              )}
-              {!isOverBudget && !isNearBudget && (
-                <p className="text-sm text-muted-foreground">
-                  ৳{(totalBudget - monthlyTotal).toFixed(2)} remaining
+                <p className="text-xs text-red-600">
+                  Over budget by ৳{(monthlyTotal - totalBudget).toFixed(0)}
                 </p>
               )}
-            </>
+              {isNearBudget && (
+                <p className="text-xs text-yellow-600">
+                  Approaching budget limit
+                </p>
+              )}
+              {!isOverBudget && !isNearBudget && (
+                <p className="text-xs text-gray-500">
+                  ৳{(totalBudget - monthlyTotal).toFixed(0)} remaining
+                </p>
+              )}
+            </div>
           ) : (
             <div className="text-center py-4">
-              <p className="text-muted-foreground">No budget set for this month</p>
+              <p className="text-sm text-gray-500">No budget set</p>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Category Breakdown Chart */}
-      <Card className="border-0 shadow-xl bg-white">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 shadow-lg">
-              <TrendingUp className="h-5 w-5 text-white" />
-            </div>
-            <span>Top Categories</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      {/* Category Breakdown */}
+      <Card className="border border-gray-200 shadow-sm">
+        <CardContent className="p-6">
+          <h3 className="font-medium mb-4">Top Categories</h3>
+          
           {categoryChartData.length > 0 ? (
             <>
-              <ResponsiveContainer width="100%" height={180}>
-                <PieChart>
-                  <Pie
-                    data={categoryChartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={70}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {categoryChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value: any) => `৳${value.toFixed(2)}`} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="space-y-2 mt-4">
+              <div className="flex items-center justify-center mb-4">
+                <div className="relative w-32 h-32">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={categoryChartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={55}
+                        paddingAngle={2}
+                        dataKey="value"
+                        strokeWidth={0}
+                      >
+                        {categoryChartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-xl">{categoryChartData.length}</div>
+                      <div className="text-xs text-gray-500">cats</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
                 {categoryChartData.slice(0, 3).map((item, index) => (
                   <div key={index} className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
@@ -217,16 +209,16 @@ export function MonthlySpendingSummary({ expenses, budgets, stats }: MonthlySpen
                         className="w-3 h-3 rounded-full" 
                         style={{ backgroundColor: COLORS[index % COLORS.length] }}
                       />
-                      <span>{item.name}</span>
+                      <span className="text-gray-600">{item.name}</span>
                     </div>
-                    <span className="font-medium">৳{item.value.toFixed(2)}</span>
+                    <span className="font-medium">৳{item.value.toFixed(0)}</span>
                   </div>
                 ))}
               </div>
             </>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              No expenses this month
+            <div className="text-center py-8">
+              <p className="text-sm text-gray-500">No expenses this month</p>
             </div>
           )}
         </CardContent>

@@ -431,9 +431,13 @@ export const api = {
   },
 
   // AI Spending Insights
-  async getAIInsights(token: string) {
+  async getAIInsights(token: string, query?: string) {
     try {
-      const res = await fetch(`${API_BASE}/ai/insights`, {
+      const url = query 
+        ? `${API_BASE}/ai/insights?query=${encodeURIComponent(query)}`
+        : `${API_BASE}/ai/insights`
+      
+      const res = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -448,11 +452,11 @@ export const api = {
       
       // Backend now returns 200 with error field instead of 500
       // So just return the data, error field will be present if there was an issue
-      if (data.error) {
+      if (data && data.error) {
         console.warn('AI insights returned with warning:', data.error)
       }
       
-      return data
+      return data || {}
     } catch (error: any) {
       console.error('Error fetching AI insights:', error.message)
       throw error

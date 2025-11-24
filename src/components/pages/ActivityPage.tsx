@@ -9,8 +9,8 @@ interface ActivityPageProps {
 
 export function ActivityPage({ activityData, loading, onGroupClick }: ActivityPageProps) {
   return (
-    <div className="space-y-6">
-      <h2>Activity</h2>
+    <div className="max-w-7xl mx-auto space-y-6">
+      <h1 className="text-3xl">Activity</h1>
       {loading ? (
         <div className="text-center py-12 text-gray-500">Loading...</div>
       ) : activityData ? (

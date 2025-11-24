@@ -287,42 +287,40 @@ export function BudgetManager({ budgets, expenses, onCreateBudget, onDeleteBudge
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-2xl font-bold">Budget Management</h3>
-        <p className="text-muted-foreground">Set spending limits for {monthNames[currentMonth]}</p>
+        <h3 className="font-medium">Budget Management</h3>
+        <p className="text-sm text-gray-600">Set spending limits for {monthNames[currentMonth]}</p>
       </div>
 
-      {/* Action Buttons - Prominent at Top */}
+      {/* Action Buttons */}
       <div className="grid grid-cols-2 gap-3">
         <Button 
           onClick={() => setDialogOpen(true)}
-          className="h-14 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all"
+          className="bg-blue-500 hover:bg-blue-600 text-white rounded-full"
         >
-          <Plus className="h-5 w-5 mr-2" />
+          <Plus className="h-4 w-4 mr-2" />
           <span>Add Budget</span>
         </Button>
         <Button 
           onClick={() => setAutoDistributeDialogOpen(true)}
-          className="h-14 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg hover:shadow-xl transition-all"
+          className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-full"
         >
-          <Sparkles className="h-5 w-5 mr-2" />
+          <Sparkles className="h-4 w-4 mr-2" />
           <span>Auto-Distribute</span>
         </Button>
       </div>
 
       {currentBudgets.length === 0 ? (
-        <Card className="border-0 shadow-xl bg-white">
+        <Card className="border border-gray-200 shadow-sm">
           <CardContent className="py-12">
             <div className="text-center">
-              <div className="inline-flex p-6 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 mb-4">
-                <AlertTriangle className="h-12 w-12 text-muted-foreground" />
-              </div>
-              <p className="text-muted-foreground">No budgets set for this month</p>
-              <p className="text-sm text-muted-foreground/70 mt-1">Create a budget to track your spending</p>
+              <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <p className="text-gray-600">No budgets set for this month</p>
+              <p className="text-sm text-gray-500 mt-1">Create a budget to track your spending</p>
             </div>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid gap-3">
           {currentBudgets.map((budget) => {
             const spent = categorySpending[budget.category] || 0
             const percentage = (spent / budget.limit) * 100
@@ -334,62 +332,64 @@ export function BudgetManager({ budgets, expenses, onCreateBudget, onDeleteBudge
             return (
               <Card 
                 key={budget.id}
-                className={`border-0 shadow-lg ${
+                className={`border shadow-sm ${
                   isOverBudget 
-                    ? 'bg-gradient-to-br from-red-50 to-orange-50'
+                    ? 'border-red-200 bg-red-50'
                     : isNearLimit
-                    ? 'bg-gradient-to-br from-yellow-50 to-orange-50'
-                    : 'bg-white'
+                    ? 'border-yellow-200 bg-yellow-50'
+                    : 'border-gray-200'
                 }`}
               >
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className={`p-3 rounded-xl ${categoryInfo.bgColor}`}>
-                        <CategoryIcon className={`h-6 w-6 ${categoryInfo.color}`} />
+                      <div className="p-2 rounded-lg bg-white border border-gray-200">
+                        <CategoryIcon className="h-5 w-5 text-gray-600" />
                       </div>
                       <div>
-                        <p className="font-semibold text-lg">{categoryInfo.label}</p>
-                        <p className="text-sm text-muted-foreground">
-                          ৳{spent.toFixed(2)} / ৳{budget.limit.toFixed(2)}
+                        <p className="font-medium">{categoryInfo.label}</p>
+                        <p className="text-sm text-gray-600">
+                          ৳{spent.toFixed(0)} / ৳{budget.limit.toFixed(0)}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {isOverBudget ? (
-                        <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-                          <AlertTriangle className="h-5 w-5" />
-                          <span className="font-medium">Over Budget</span>
+                        <div className="flex items-center gap-1.5 text-xs text-red-600">
+                          <AlertTriangle className="h-4 w-4" />
+                          <span>Over Budget</span>
                         </div>
                       ) : isNearLimit ? (
-                        <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
-                          <AlertTriangle className="h-5 w-5" />
-                          <span className="font-medium">Near Limit</span>
+                        <div className="flex items-center gap-1.5 text-xs text-yellow-600">
+                          <AlertTriangle className="h-4 w-4" />
+                          <span>Near Limit</span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                          <CheckCircle2 className="h-5 w-5" />
-                          <span className="font-medium">On Track</span>
+                        <div className="flex items-center gap-1.5 text-xs text-emerald-600">
+                          <CheckCircle2 className="h-4 w-4" />
+                          <span>On Track</span>
                         </div>
                       )}
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => onDeleteBudget(budget.id)}
-                        className="hover:bg-red-50 hover:text-red-600"
+                        className="rounded-full hover:bg-red-50 hover:text-red-600"
                       >
-                        <Trash2 className="h-5 w-5" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Progress 
                       value={Math.min(percentage, 100)} 
-                      className="h-3"
+                      className={`h-2 ${
+                        isOverBudget ? 'bg-red-200' : isNearLimit ? 'bg-yellow-200' : 'bg-gray-200'
+                      }`}
                     />
-                    <div className="flex justify-between text-sm text-muted-foreground">
+                    <div className="flex justify-between text-xs text-gray-600">
                       <span>{percentage.toFixed(0)}% used</span>
-                      <span>৳{Math.max(budget.limit - spent, 0).toFixed(2)} remaining</span>
+                      <span>৳{Math.max(budget.limit - spent, 0).toFixed(0)} remaining</span>
                     </div>
                   </div>
                 </CardContent>
@@ -433,13 +433,13 @@ export function BudgetManager({ budgets, expenses, onCreateBudget, onDeleteBudge
                   variant="ghost"
                   size="sm"
                   onClick={toggleAllCategories}
-                  className="text-xs"
+                  className="text-xs rounded-full"
                 >
                   {selectedCategories.length === expenseCategories.length ? 'Deselect All' : 'Select All Available'}
                 </Button>
               </div>
               
-              <div className="grid grid-cols-2 gap-2 p-4 bg-muted/30 rounded-lg max-h-64 overflow-y-auto">
+              <div className="grid grid-cols-2 gap-2 p-4 bg-gray-50 rounded-lg max-h-64 overflow-y-auto">
                 {expenseCategories.map((cat) => {
                   const hasExistingBudget = currentBudgets.some(b => b.category === cat.id)
                   const isSelected = selectedCategories.includes(cat.id)
@@ -449,7 +449,7 @@ export function BudgetManager({ budgets, expenses, onCreateBudget, onDeleteBudge
                     <div
                       key={cat.id}
                       onClick={() => !hasExistingBudget && toggleCategory(cat.id)}
-                      className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
+                      className={`flex items-center gap-2 p-3 rounded-lg border transition-all cursor-pointer ${
                         hasExistingBudget
                           ? 'bg-gray-100 border-gray-300 opacity-50 cursor-not-allowed'
                           : isSelected
@@ -464,13 +464,13 @@ export function BudgetManager({ budgets, expenses, onCreateBudget, onDeleteBudge
                         onChange={() => {}}
                         className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
                       />
-                      <div className={`p-2 rounded-lg ${cat.bgColor}`}>
-                        <CategoryIcon className={`h-4 w-4 ${cat.color}`} />
+                      <div className="p-2 rounded-lg bg-white border border-gray-200">
+                        <CategoryIcon className="h-4 w-4 text-gray-600" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{cat.label}</p>
                         {hasExistingBudget && (
-                          <p className="text-xs text-muted-foreground">Already exists</p>
+                          <p className="text-xs text-gray-500">Already exists</p>
                         )}
                       </div>
                     </div>
@@ -479,7 +479,7 @@ export function BudgetManager({ budgets, expenses, onCreateBudget, onDeleteBudge
               </div>
               
               {selectedCategories.length > 0 && (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-gray-600">
                   {selectedCategories.length} {selectedCategories.length === 1 ? 'category' : 'categories'} selected
                 </p>
               )}
@@ -500,7 +500,7 @@ export function BudgetManager({ budgets, expenses, onCreateBudget, onDeleteBudge
                 />
                 <Button
                   onClick={handleCalculateDistribution}
-                  className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white"
+                  className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-full"
                 >
                   <TrendingUp className="h-4 w-4 mr-2" />
                   Calculate
@@ -510,12 +510,12 @@ export function BudgetManager({ budgets, expenses, onCreateBudget, onDeleteBudge
 
             {distributionPreview && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950 border border-emerald-200 dark:border-emerald-800">
+                <div className="flex items-center justify-between p-4 rounded-lg bg-emerald-50 border border-emerald-200">
                   <div>
-                    <p className="font-medium text-emerald-900 dark:text-emerald-100">
+                    <p className="font-medium text-emerald-900">
                       {distributionPreview.isDefault ? '📊 Default Distribution' : '🎯 Smart Distribution'}
                     </p>
-                    <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                    <p className="text-sm text-emerald-700">
                       {distributionPreview.isDefault 
                         ? 'Using balanced defaults for new users'
                         : `Based on ৳${distributionPreview.totalSpent.toFixed(2)} spent over ${distributionPreview.monthsAnalyzed} months`
@@ -523,10 +523,10 @@ export function BudgetManager({ budgets, expenses, onCreateBudget, onDeleteBudge
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-2xl text-emerald-900 dark:text-emerald-100">
-                      ৳{parseFloat(totalBudget).toFixed(2)}
+                    <p className="text-2xl text-emerald-900">
+                      ৳{parseFloat(totalBudget).toFixed(0)}
                     </p>
-                    <p className="text-xs text-emerald-600 dark:text-emerald-400">Total Budget</p>
+                    <p className="text-xs text-emerald-600">Total Budget</p>
                   </div>
                 </div>
 
@@ -545,18 +545,18 @@ export function BudgetManager({ budgets, expenses, onCreateBudget, onDeleteBudge
                           className="flex items-center justify-between p-4 rounded-lg bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
                         >
                           <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-lg ${categoryInfo.bgColor}`}>
-                              <CategoryIcon className={`h-5 w-5 ${categoryInfo.color}`} />
+                            <div className="p-2 rounded-lg bg-gray-50 border border-gray-200">
+                              <CategoryIcon className="h-5 w-5 text-gray-600" />
                             </div>
                             <div>
                               <p className="font-medium">{categoryInfo.label}</p>
-                              <p className="text-xs text-muted-foreground">
+                              <p className="text-xs text-gray-600">
                                 {percentage.toFixed(1)}% of total budget
                               </p>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-semibold">৳{(amount as number).toFixed(2)}</p>
+                            <p className="font-medium">৳{(amount as number).toFixed(0)}</p>
                           </div>
                         </div>
                       )
@@ -576,13 +576,14 @@ export function BudgetManager({ budgets, expenses, onCreateBudget, onDeleteBudge
                   setSelectedCategories([])
                 }}
                 disabled={loading}
+                className="rounded-full"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleApplyDistribution}
                 disabled={!distributionPreview || loading}
-                className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white"
+                className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-full"
               >
                 {loading ? 'Creating...' : 'Apply Distribution'}
               </Button>
@@ -640,13 +641,14 @@ export function BudgetManager({ budgets, expenses, onCreateBudget, onDeleteBudge
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
                 disabled={loading}
+                className="rounded-full"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={loading}
-                className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white"
+                className="bg-blue-500 hover:bg-blue-600 text-white rounded-full"
               >
                 {loading ? 'Creating...' : 'Create Budget'}
               </Button>

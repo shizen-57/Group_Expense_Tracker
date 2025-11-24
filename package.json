@@ -34,6 +34,7 @@
           "@radix-ui/react-tooltip": "^1.1.8",
           "@supabase/supabase-js": "*",
           "@tailwindcss/vite": "*",
+          "@tanstack/react-query": "*",
           "@vitejs/plugin-react-swc": "*",
           "class-variance-authority": "^0.7.1",
           "clsx": "*",

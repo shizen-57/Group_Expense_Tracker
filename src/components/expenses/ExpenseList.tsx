@@ -1,6 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { memo, useMemo, useState } from 'react'
+import { Card, CardContent } from '../ui/card'
 import { Button } from '../ui/button'
-import { Trash2, Receipt, FileText } from 'lucide-react'
+import { Trash2, Receipt, FileText, ChevronLeft, ChevronRight } from 'lucide-react'
 import { getCategoryInfo } from '../groups/ExpenseCategories'
 import {
   AlertDialog,
@@ -19,24 +20,35 @@ interface ExpenseListProps {
   onDelete: (id: string) => void
 }
 
-export function ExpenseList({ expenses, onDelete }: ExpenseListProps) {
+const ITEMS_PER_PAGE = 20
+
+export const ExpenseList = memo(function ExpenseList({ expenses, onDelete }: ExpenseListProps) {
+  const [currentPage, setCurrentPage] = useState(1)
+  
   // Ensure expenses is an array
   const expensesArray = Array.isArray(expenses) ? expenses : []
   
-  const sortedExpenses = [...expensesArray].sort((a, b) => 
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  )
+  // Memoize sorted expenses to prevent re-sorting on every render
+  const sortedExpenses = useMemo(() => {
+    return [...expensesArray].sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
+  }, [expensesArray])
+
+  // Pagination
+  const totalPages = Math.ceil(sortedExpenses.length / ITEMS_PER_PAGE)
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const endIndex = startIndex + ITEMS_PER_PAGE
+  const paginatedExpenses = sortedExpenses.slice(startIndex, endIndex)
 
   if (expensesArray.length === 0) {
     return (
-      <Card className="border-0 shadow-xl bg-white">
+      <Card className="border border-gray-200 shadow-sm">
         <CardContent className="py-12">
           <div className="text-center">
-            <div className="inline-flex p-6 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 mb-4">
-              <Receipt className="h-12 w-12 text-muted-foreground" />
-            </div>
-            <p className="text-muted-foreground">No expenses yet</p>
-            <p className="text-sm text-muted-foreground/70 mt-1">Add your first expense to get started</p>
+            <Receipt className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+            <p className="text-gray-600">No expenses yet</p>
+            <p className="text-sm text-gray-500 mt-1">Add your first expense to get started</p>
           </div>
         </CardContent>
       </Card>
@@ -45,83 +57,112 @@ export function ExpenseList({ expenses, onDelete }: ExpenseListProps) {
 
   return (
     <div className="space-y-4">
-      {sortedExpenses.map((expense) => {
-        const categoryInfo = getCategoryInfo(expense.category || 'other')
-        const CategoryIcon = categoryInfo.icon
+      <div className="space-y-3">
+        {paginatedExpenses.map((expense) => {
+          const categoryInfo = getCategoryInfo(expense.category || 'other')
+          const CategoryIcon = categoryInfo.icon
 
-        return (
-          <Card 
-            key={expense.id}
-            className="border-0 shadow-lg hover:shadow-xl transition-all card-hover bg-white/95 backdrop-blur-sm"
-          >
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4 flex-1">
-                  <div className={`p-4 rounded-2xl bg-gradient-to-br ${categoryInfo.bgColor} shadow-md`}>
-                    <CategoryIcon className={`h-6 w-6 ${categoryInfo.color}`} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <p className="font-semibold text-lg">{expense.description}</p>
-                      <span className={`text-xs px-3 py-1 rounded-full font-medium ${categoryInfo.bgColor} ${categoryInfo.color}`}>
-                        {categoryInfo.label}
-                      </span>
+          return (
+            <Card 
+              key={expense.id}
+              className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className="p-2 rounded-lg bg-white border border-gray-200">
+                      <CategoryIcon className="h-5 w-5 text-gray-600" />
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {new Date(expense.createdAt).toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric', 
-                        year: 'numeric' 
-                      })}
-                    </p>
-                    {expense.notes && (
-                      <div className="flex items-start gap-2 mt-2">
-                        <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
-                        <p className="text-sm text-muted-foreground">{expense.notes}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-medium text-gray-900 truncate">{expense.description}</p>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-200 text-gray-700 whitespace-nowrap">
+                          {categoryInfo.label}
+                        </span>
                       </div>
-                    )}
+                      <p className="text-xs text-gray-500">
+                        {new Date(expense.createdAt).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric', 
+                          year: 'numeric' 
+                        })}
+                      </p>
+                      {expense.notes && (
+                        <div className="flex items-start gap-2 mt-2">
+                          <FileText className="h-3 w-3 text-gray-400 mt-0.5 flex-shrink-0" />
+                          <p className="text-xs text-gray-600">{expense.notes}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
-                      ৳{expense.amount.toFixed(2)}
-                    </p>
-                  </div>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className="hover:bg-red-50 hover:text-red-600"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Expense</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete this expense? This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => onDelete(expense.id)}
-                          className="bg-red-600 hover:bg-red-700"
+                  <div className="flex items-center gap-3 ml-4">
+                    <div className="text-right">
+                      <p className="text-lg font-medium text-gray-900">
+                        ৳{expense.amount.toFixed(2)}
+                      </p>
+                    </div>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="rounded-full hover:bg-red-50 hover:text-red-600"
                         >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Expense</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete this expense? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => onDelete(expense.id)}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        )
-      })}
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-full"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(currentPage - 1)}
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Previous
+          </Button>
+          <p className="text-sm text-gray-600">
+            Page {currentPage} of {totalPages} • {sortedExpenses.length} total expenses
+          </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-full"
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(currentPage + 1)}
+          >
+            Next
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+      )}
     </div>
   )
-}
+})

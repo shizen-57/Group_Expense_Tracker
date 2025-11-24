@@ -18,67 +18,42 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
   ]
 
   return (
-    <nav className="glass border-b border-white/20 sticky top-0 z-50 backdrop-blur-xl">
+    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 backdrop-blur-xl shadow-sm">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <motion.div 
-            className="flex items-center gap-2"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-2 rounded-xl shadow-lg">
-              <Wallet className="h-6 w-6 text-white" />
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-emerald-500 rounded-lg">
+              <Wallet className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold gradient-text">ExpenseFlow</h1>
-              <p className="text-xs text-muted-foreground -mt-1">Smart Expense Manager</p>
+              <h1 className="text-xl">ExpenseFlow</h1>
+              <p className="text-xs text-gray-500 -mt-1">Smart Expense Manager</p>
             </div>
-          </motion.div>
+          </div>
           
           {/* Navigation Items */}
           <div className="flex items-center gap-2">
             {/* Notification Center */}
             <NotificationCenter />
             
-            {navItems.map((item, index) => {
+            {navItems.map((item) => {
               const Icon = item.icon
               const isActive = currentPage === item.id
-              const isAI = item.id === 'ai-insights'
               
               return (
-                <motion.button
+                <button
                   key={item.id}
                   onClick={() => onNavigate(item.id)}
-                  className={`relative flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${
                     isActive 
-                      ? isAI
-                        ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg shadow-purple-500/30'
-                        : 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30'
-                      : isAI
-                        ? 'text-purple-600 hover:text-purple-700 hover:bg-purple-50'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-white/50 dark:hover:bg-white/10'
+                      ? 'bg-emerald-500 text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   }`}
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
                 >
-                  <Icon className={`h-5 w-5 ${isAI && !isActive ? 'animate-pulse' : ''}`} />
+                  <Icon className="h-5 w-5" />
                   <span className="hidden sm:inline font-medium">{item.label}</span>
-                  
-                  {isActive && (
-                    <motion.div
-                      className={`absolute inset-0 bg-gradient-to-r ${
-                        isAI ? 'from-purple-500 to-pink-600' : 'from-emerald-500 to-teal-600'
-                      } rounded-xl -z-10`}
-                      layoutId="activeNav"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                </motion.button>
+                </button>
               )
             })}
           </div>
