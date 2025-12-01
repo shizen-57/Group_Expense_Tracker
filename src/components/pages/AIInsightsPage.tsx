@@ -38,7 +38,7 @@ export function AIInsightsPage({ onGetAIInsights }: AIInsightsPageProps) {
     const interval = setInterval(() => {
       if (lastFetchTime > 0) {
         const elapsed = Date.now() - lastFetchTime
-        const remaining = Math.max(0, Math.ceil((10000 - elapsed) / 1000))
+        const remaining = Math.max(0, Math.ceil((15000 - elapsed) / 1000))
         setCooldownSeconds(remaining)
       }
     }, 1000)
@@ -47,9 +47,9 @@ export function AIInsightsPage({ onGetAIInsights }: AIInsightsPageProps) {
   }, [lastFetchTime])
 
   const fetchInsights = async () => {
-    // Prevent duplicate calls within 10 seconds
+    // Prevent duplicate calls within 15 seconds (matches server rate limit)
     const now = Date.now()
-    if (loading || (now - lastFetchTime < 10000)) {
+    if (loading || (now - lastFetchTime < 15000)) {
       console.log('Skipping fetch - too soon since last call')
       return
     }
@@ -94,7 +94,7 @@ export function AIInsightsPage({ onGetAIInsights }: AIInsightsPageProps) {
       
       if (error.message.includes('Rate limit') || error.message.includes('Too Many Requests')) {
         errorMessage = '⏱️ AI rate limit reached'
-        userMessage = 'OpenRouter free tier: 4 AI calls per minute with 10s cooldown. Results are cached for 30 minutes. Please wait before refreshing.'
+        userMessage = 'OpenRouter free tier: 3 AI calls per minute with 15s cooldown. Results are cached for 4 hours. Please wait before refreshing.'
       } else if (error.message.includes('cooldown')) {
         errorMessage = '⏱️ Cooldown active'
         userMessage = error.message
@@ -110,7 +110,7 @@ export function AIInsightsPage({ onGetAIInsights }: AIInsightsPageProps) {
         summary: userMessage,
         recommendations: [{
           priority: 'low',
-          action: 'Cached AI insights are served to minimize API usage. The cache refreshes every 30 minutes automatically.',
+          action: 'Cached AI insights are served to minimize API usage. The cache refreshes every 4 hours automatically.',
           potential_savings: 0
         }],
         patterns: [],
@@ -185,6 +185,23 @@ export function AIInsightsPage({ onGetAIInsights }: AIInsightsPageProps) {
           >
             <Settings className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
           </Button>
+          
+          {cooldownSeconds > 0 && (
+            <div className="text-xs text-gray-500">
+              Wait {cooldownSeconds}s
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Info Banner */}
+      <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+        <div className="flex-1">
+          <p className="text-sm text-blue-900">
+            <span className="font-medium">Smart Caching Enabled:</span> AI insights are cached for 4 hours to optimize performance and minimize API usage. 
+            Refresh cooldown is 15 seconds.
+          </p>
         </div>
       </div>
 

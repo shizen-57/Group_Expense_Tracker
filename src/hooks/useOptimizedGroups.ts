@@ -23,7 +23,7 @@ export function useOptimizedGroups(accessToken: string | null) {
     queryKey: ['group-detail', accessToken, selectedGroupId],
     queryFn: async () => {
       if (!accessToken || !selectedGroupId) return null
-      return await api.getGroupDetail(accessToken, selectedGroupId)
+      return await api.getGroup(accessToken, selectedGroupId)
     },
     enabled: !!accessToken && !!selectedGroupId,
   })
@@ -47,7 +47,7 @@ export function useOptimizedGroups(accessToken: string | null) {
   const addExpenseMutation = useMutation({
     mutationFn: async ({ groupId, expenseData }: { groupId: string; expenseData: any }) => {
       if (!accessToken) throw new Error('Not authenticated')
-      return await api.addGroupExpense(accessToken, groupId, expenseData)
+      return await api.addExpense(accessToken, groupId, expenseData)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['group-detail', accessToken, selectedGroupId] })
@@ -64,7 +64,7 @@ export function useOptimizedGroups(accessToken: string | null) {
   const simplifyDebtsMutation = useMutation({
     mutationFn: async (groupId: string) => {
       if (!accessToken) throw new Error('Not authenticated')
-      return await api.simplifyGroupDebts(accessToken, groupId)
+      return await api.simplifyDebts(accessToken, groupId)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['group-detail', accessToken, selectedGroupId] })
@@ -79,7 +79,7 @@ export function useOptimizedGroups(accessToken: string | null) {
   const settleAndSyncMutation = useMutation({
     mutationFn: async ({ groupId, settlements }: { groupId: string; settlements: any[] }) => {
       if (!accessToken) throw new Error('Not authenticated')
-      return await api.settleGroupDebts(accessToken, groupId, settlements)
+      return await api.settleGroupBill(accessToken, groupId)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['group-detail', accessToken, selectedGroupId] })
@@ -97,7 +97,7 @@ export function useOptimizedGroups(accessToken: string | null) {
   const addMemberMutation = useMutation({
     mutationFn: async ({ groupId, friendId }: { groupId: string; friendId: string }) => {
       if (!accessToken) throw new Error('Not authenticated')
-      return await api.addGroupMember(accessToken, groupId, friendId)
+      return await api.addMemberById(accessToken, groupId, friendId)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['group-detail', accessToken, selectedGroupId] })

@@ -1342,13 +1342,13 @@ app.delete('/make-server-f573a585/budgets/:id', requireAuth, async (c) => {
   }
 })
 
-// Rate limiting state - Conservative for OpenRouter free tier
+// Rate limiting state - Very Conservative for OpenRouter free tier
 const rateLimitState = {
   lastCallTime: 0,
   callCount: 0,
   resetTime: 0,
-  minDelay: 10000, // 10 seconds between calls (very conservative for free tier)
-  maxCallsPerMinute: 4 // Reduced from 6 to 4 for OpenRouter free tier
+  minDelay: 15000, // 15 seconds between calls (ultra conservative for free tier)
+  maxCallsPerMinute: 3 // Reduced from 4 to 3 for OpenRouter free tier
 }
 
 // Helper function to check and enforce rate limits
@@ -1691,12 +1691,12 @@ app.get('/make-server-f573a585/search', requireAuth, async (c) => {
     const expenses = await kv.get(`user:${userId}:personal_expenses`)
     const expenseList = expenses.value || []
     
-    // Check cache first (10 minute cache for search results)
+    // Check cache first (30 minute cache for search results)
     const searchCacheKey = `search:${userId}:${query.toLowerCase().trim()}`
     const cachedSearch = await kv.get(searchCacheKey)
     if (cachedSearch.value) {
       const cacheAge = Date.now() - new Date(cachedSearch.value.cachedAt).getTime()
-      if (cacheAge < 10 * 60 * 1000) { // 10 minutes
+      if (cacheAge < 30 * 60 * 1000) { // 30 minutes
         console.log(`Returning cached search (age: ${Math.round(cacheAge / 1000)}s)`)
         return c.json(cachedSearch.value.data)
       }
@@ -1969,12 +1969,12 @@ app.get('/make-server-f573a585/ai/insights', requireAuth, async (c) => {
   try {
     const userId = c.get('userId')
     
-    // Check cache first (30 minute cache - increased for free tier rate limits)
+    // Check cache first (4 hour cache - significantly increased for free tier rate limits)
     const cacheKey = `ai_insights:${userId}`
     const cached = await kv.get(cacheKey)
     if (cached.value) {
       const cacheAge = Date.now() - new Date(cached.value.cachedAt).getTime()
-      if (cacheAge < 30 * 60 * 1000) { // 30 minutes
+      if (cacheAge < 4 * 60 * 60 * 1000) { // 4 hours
         console.log(`Returning cached insights (age: ${Math.round(cacheAge / 1000)}s)`)
         return c.json(cached.value.data)
       }
