@@ -77,27 +77,28 @@ export function MonthlySpendingSummary({ expenses, budgets, stats }: MonthlySpen
                      'July', 'August', 'September', 'October', 'November', 'December']
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
       {/* Monthly Total - Hero Card */}
-      <Card className="border-0 shadow-md bg-gradient-to-br from-emerald-100 via-teal-50 to-cyan-50">
-        <CardContent className="p-8">
-          <div className="space-y-4">
+      <Card className="h-full border-0 shadow-md bg-gradient-to-br from-emerald-100 via-teal-50 to-cyan-50 rounded-[28px]">
+        <CardContent className="p-8 lg:p-10 flex flex-col justify-center h-full">
+          <div className="space-y-8">
             <div>
-              <div className="text-5xl text-gray-800 mb-2">
+              <p className="text-xs uppercase tracking-[0.4em] text-emerald-600/70">Monthly pulse</p>
+              <div className="text-5xl lg:text-6xl text-gray-800 leading-tight mt-4">
                 ৳{monthlyTotal.toFixed(0)}
               </div>
-              <div className="text-2xl text-gray-700">{monthNames[currentMonth]} Spending</div>
+              <div className="text-base lg:text-lg text-gray-700 mt-2">{monthNames[currentMonth]} Spending</div>
             </div>
-            
+
             <div className="flex items-center gap-2">
               {percentageChange !== 0 && (
-                <div className={`flex items-center gap-1 text-sm ${percentageChange > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                <div className={`flex items-center gap-2 text-sm ${percentageChange > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
                   {percentageChange > 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                  <span>{Math.abs(percentageChange).toFixed(1)}% vs last month</span>
+                  <span className="font-medium">{Math.abs(percentageChange).toFixed(1)}% vs last month</span>
                 </div>
               )}
             </div>
-            
+
             <p className="text-sm text-gray-600">
               {monthlyExpenses.length} {monthlyExpenses.length === 1 ? 'transaction' : 'transactions'}
             </p>
@@ -106,16 +107,16 @@ export function MonthlySpendingSummary({ expenses, budgets, stats }: MonthlySpen
       </Card>
 
       {/* Budget Progress */}
-      <Card className={`border shadow-sm ${
+      <Card className={`h-full border shadow-sm rounded-[28px] ${
         isOverBudget 
           ? 'border-red-200 bg-red-50'
           : isNearBudget
           ? 'border-yellow-200 bg-yellow-50'
           : 'border-gray-200 bg-white'
       }`}>
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="text-sm text-gray-600">Budget Progress</div>
+        <CardContent className="p-8 lg:p-10 flex flex-col justify-center h-full space-y-6">
+          <div className="flex items-center justify-between">
+            <p className="text-sm uppercase tracking-[0.3em] text-gray-500">Budget progress</p>
             {isOverBudget ? (
               <AlertTriangle className="h-5 w-5 text-red-600" />
             ) : isNearBudget ? (
@@ -126,7 +127,7 @@ export function MonthlySpendingSummary({ expenses, budgets, stats }: MonthlySpen
           </div>
           
           {totalBudget > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-4 text-center">
               <div>
                 <div className="text-2xl mb-1">{budgetPercentage.toFixed(0)}%</div>
                 <div className="text-xs text-gray-500">
@@ -158,7 +159,7 @@ export function MonthlySpendingSummary({ expenses, budgets, stats }: MonthlySpen
               )}
             </div>
           ) : (
-            <div className="text-center py-4">
+            <div className="flex items-center justify-center py-8">
               <p className="text-sm text-gray-500">No budget set</p>
             </div>
           )}
@@ -166,22 +167,25 @@ export function MonthlySpendingSummary({ expenses, budgets, stats }: MonthlySpen
       </Card>
 
       {/* Category Breakdown */}
-      <Card className="border border-gray-200 shadow-sm">
-        <CardContent className="p-6">
-          <h3 className="font-medium mb-4">Top Categories</h3>
-          
+      <Card className="h-full border border-gray-200 shadow-sm rounded-[28px]">
+        <CardContent className="p-8 lg:p-10 flex flex-col justify-center h-full space-y-6">
+          <div>
+            <p className="text-sm uppercase tracking-[0.3em] text-gray-500">Top categories</p>
+            <h3 className="font-semibold text-lg mt-2">Where spend concentrates</h3>
+          </div>
+
           {categoryChartData.length > 0 ? (
             <>
-              <div className="flex items-center justify-center mb-4">
-                <div className="relative w-32 h-32">
+              <div className="flex items-center justify-center">
+                <div className="relative w-28 h-28">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={categoryChartData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={40}
-                        outerRadius={55}
+                        innerRadius={36}
+                        outerRadius={52}
                         paddingAngle={2}
                         dataKey="value"
                         strokeWidth={0}
@@ -194,14 +198,14 @@ export function MonthlySpendingSummary({ expenses, budgets, stats }: MonthlySpen
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
-                      <div className="text-xl">{categoryChartData.length}</div>
+                      <div className="text-lg font-semibold">{categoryChartData.length}</div>
                       <div className="text-xs text-gray-500">cats</div>
                     </div>
                   </div>
                 </div>
               </div>
-              
-              <div className="space-y-2">
+
+              <div className="space-y-3">
                 {categoryChartData.slice(0, 3).map((item, index) => (
                   <div key={index} className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">

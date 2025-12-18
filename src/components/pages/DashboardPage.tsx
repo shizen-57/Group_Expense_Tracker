@@ -4,10 +4,12 @@ import { StatCardSkeleton } from '../ui/skeleton'
 interface DashboardPageProps {
   stats: any
   loading: boolean
+  personalExpenses?: any[]
+  personalTrends?: any
   onNavigate: (page: 'dashboard' | 'groups' | 'friends' | 'activity' | 'profile') => void
 }
 
-export function DashboardPage({ stats, loading, onNavigate }: DashboardPageProps) {
+export function DashboardPage({ stats, loading, personalExpenses, personalTrends, onNavigate }: DashboardPageProps) {
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto space-y-6">
@@ -32,5 +34,5 @@ export function DashboardPage({ stats, loading, onNavigate }: DashboardPageProps
     return <div className="text-center py-12 text-gray-500">No data available</div>
   }
 
-  return <Dashboard stats={stats} onNavigate={onNavigate} />
+  return <Dashboard stats={stats} personalExpenses={personalExpenses} trends={personalTrends} onNavigate={onNavigate} />
 }

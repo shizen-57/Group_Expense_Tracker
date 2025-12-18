@@ -130,6 +130,8 @@ function AppContent() {
             <DashboardPage 
               stats={dashboard.dashboardStats}
               loading={dashboard.loading}
+              personalExpenses={personalExpenses.expenses}
+              personalTrends={personalExpenses.trends}
               onNavigate={setCurrentPage}
             />
           </Suspense>
