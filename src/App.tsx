@@ -3,6 +3,7 @@ import { motion } from 'motion/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from './components/ui/sonner'
 import { LoadingScreen } from './components/layout/LoadingScreen'
+import { LandingPage } from './components/pages/LandingPage'
 import { AuthLayout } from './components/layout/AuthLayout'
 import { Navigation } from './components/layout/Navigation'
 import { useAuth } from './hooks/useAuth'
@@ -24,7 +25,7 @@ const ActivityPage = lazy(() => import('./components/pages/ActivityPage').then(m
 const ProfilePage = lazy(() => import('./components/pages/ProfilePage').then(m => ({ default: m.ProfilePage })))
 const AIInsightsPage = lazy(() => import('./components/pages/AIInsightsPage').then(m => ({ default: m.AIInsightsPage })))
 
-type Page = 'dashboard' | 'expenses' | 'groups' | 'friends' | 'activity' | 'profile' | 'ai-insights'
+type Page = 'landing' | 'dashboard' | 'expenses' | 'groups' | 'friends' | 'activity' | 'profile' | 'ai-insights'
 
 // Page loading fallback
 function PageLoader() {
@@ -37,7 +38,8 @@ function PageLoader() {
 
 function AppContent() {
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot-password'>('login')
-  const [currentPage, setCurrentPage] = useState<Page>('expenses')
+  const [currentPage, setCurrentPage] = useState<Page>('landing')
+  const [showLanding, setShowLanding] = useState(true)
   
   // Custom hooks for state management with React Query
   const { accessToken, user, isAuthenticating, isCheckingSession, handleLogin, handleSignup, handleLogout } = useAuth()
@@ -88,8 +90,19 @@ function AppContent() {
     return <LoadingScreen />
   }
 
-  // Show login/signup forms
+  // Show landing page for non-authenticated users
   if (!accessToken || !user) {
+    if (showLanding) {
+      return (
+        <LandingPage 
+          onGetStarted={() => {
+            setShowLanding(false)
+            setAuthMode('signup')
+          }}
+        />
+      )
+    }
+    
     return (
       <AuthLayout
         authMode={authMode}
