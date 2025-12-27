@@ -1744,16 +1744,16 @@ app.delete('/make-server-f573a585/budgets/:id', requireAuth, async (c) => {
   }
 })
 
-// Rate limiting state - Balanced for OpenRouter free tier with model fallbacks
+// Rate limiting state - Generous for OpenRouter free tier with model fallbacks
 const rateLimitState = {
   lastCallTime: 0,
   callCount: 0,
   resetTime: 0,
-  minDelay: 3000, // 3 seconds between calls (we have model fallbacks now)
-  maxCallsPerMinute: 10 // Allow more calls since we rotate models
+  minDelay: 1000, // 1 second between calls (we have model fallbacks now)
+  maxCallsPerMinute: 30 // Very generous since we rotate through 4 models
 }
 
-// Helper function to check and enforce rate limits
+// Helper function to check and enforce rate limits - waits if needed instead of throwing
 async function checkRateLimit() {
   const now = Date.now()
   
@@ -1763,11 +1763,13 @@ async function checkRateLimit() {
     rateLimitState.resetTime = now + 60000 // Next minute
   }
   
-  // Check if we've exceeded calls per minute
+  // If we've exceeded calls per minute, wait for reset
   if (rateLimitState.callCount >= rateLimitState.maxCallsPerMinute) {
     const waitTime = rateLimitState.resetTime - now
-    console.log(`Rate limit reached (${rateLimitState.callCount}/${rateLimitState.maxCallsPerMinute}), reset in ${waitTime}ms`)
-    throw new Error(`Rate limit: ${Math.ceil(waitTime / 1000)}s cooldown. Cached results served for 30 minutes.`)
+    console.log(`Rate limit reached (${rateLimitState.callCount}/${rateLimitState.maxCallsPerMinute}), waiting ${Math.ceil(waitTime / 1000)}s...`)
+    await new Promise(resolve => setTimeout(resolve, waitTime + 100)) // Wait a bit extra
+    rateLimitState.callCount = 0
+    rateLimitState.resetTime = Date.now() + 60000
   }
   
   // Enforce minimum delay between calls
@@ -1780,18 +1782,11 @@ async function checkRateLimit() {
   
   rateLimitState.lastCallTime = Date.now()
   rateLimitState.callCount++
+  console.log(`API call ${rateLimitState.callCount}/${rateLimitState.maxCallsPerMinute}`)
 }
 
-// Free models to try in order (fallback chain)
-const FREE_MODELS = [
-  'google/gemini-2.0-flash-exp:free',
-  'meta-llama/llama-3.2-3b-instruct:free',
-  'qwen/qwen-2-7b-instruct:free',
-  'mistralai/mistral-7b-instruct:free'
-]
-
-// Helper function to call OpenRouter API with rate limiting and retry logic
-async function callGeminiAPI(prompt: string, systemInstruction?: string, retryCount = 0, modelIndex = 0): Promise<string> {
+// Helper function to call OpenRouter API
+async function callGeminiAPI(prompt: string, systemInstruction?: string, retryCount = 0): Promise<string> {
   const apiKey = Deno.env.get('OPENROUTER_API_KEY')
   if (!apiKey) {
     throw new Error('OPENROUTER_API_KEY not configured')
@@ -1800,8 +1795,7 @@ async function callGeminiAPI(prompt: string, systemInstruction?: string, retryCo
   // Check rate limits before making call
   await checkRateLimit()
 
-  const model = FREE_MODELS[modelIndex] || FREE_MODELS[0]
-  console.log(`Trying model: ${model} (attempt ${retryCount + 1})`)
+  console.log(`Calling OpenRouter API (attempt ${retryCount + 1})`)
 
   try {
     const messages: any[] = []
@@ -1829,7 +1823,7 @@ async function callGeminiAPI(prompt: string, systemInstruction?: string, retryCo
           'X-Title': 'Expense Manager AI'
         },
         body: JSON.stringify({
-          model: model,
+          model: 'deepseek/deepseek-r1:free',
           messages: messages,
           temperature: 0.1,
           max_tokens: 1024,
@@ -1839,78 +1833,60 @@ async function callGeminiAPI(prompt: string, systemInstruction?: string, retryCo
 
     const data = await response.json()
 
-    // Handle rate limit errors from API
+    // Handle errors
     if (!response.ok) {
+      console.error('OpenRouter API error:', data)
+      
       if (response.status === 429) {
-        console.error(`Rate limit hit for model ${model}`)
+        console.error('OpenRouter API rate limit exceeded')
         
-        // Try next model if available
-        if (modelIndex < FREE_MODELS.length - 1) {
-          console.log(`Trying fallback model...`)
-          await new Promise(resolve => setTimeout(resolve, 2000)) // Wait 2s before trying next model
-          return callGeminiAPI(prompt, systemInstruction, 0, modelIndex + 1)
-        }
-        
-        // If all models exhausted, retry with exponential backoff
+        // Retry with exponential backoff
         if (retryCount < 3) {
-          const waitTime = Math.pow(2, retryCount + 1) * 5000 // 10s, 20s, 40s
-          console.log(`All models rate limited. Waiting ${waitTime/1000}s before retry...`)
+          const waitTime = Math.pow(2, retryCount + 1) * 2000 // 4s, 8s, 16s
+          console.log(`Rate limited. Waiting ${waitTime/1000}s before retry...`)
           await new Promise(resolve => setTimeout(resolve, waitTime))
-          return callGeminiAPI(prompt, systemInstruction, retryCount + 1, 0)
+          return callGeminiAPI(prompt, systemInstruction, retryCount + 1)
         }
         
-        throw new Error('Too Many Requests - All models rate limited. Please try again in a minute.')
+        throw new Error('Too Many Requests - Please try again in a minute.')
       }
       
-      // Check for error in response body
       if (data.error) {
-        console.error('OpenRouter API error:', data.error)
-        
-        // Try next model on other errors too
-        if (modelIndex < FREE_MODELS.length - 1) {
-          console.log(`Error with ${model}, trying fallback...`)
-          await new Promise(resolve => setTimeout(resolve, 1000))
-          return callGeminiAPI(prompt, systemInstruction, retryCount, modelIndex + 1)
-        }
-        
-        throw new Error(data.error.message || 'API error')
+        throw new Error(data.error.message || 'OpenRouter API error')
       }
       
       throw new Error(`OpenRouter API error: ${response.statusText}`)
     }
 
+    // Extract text from OpenRouter response
     const content = data.choices?.[0]?.message?.content || ''
+    
     if (!content) {
-      // Empty response, try next model
-      if (modelIndex < FREE_MODELS.length - 1) {
-        console.log(`Empty response from ${model}, trying fallback...`)
-        return callGeminiAPI(prompt, systemInstruction, retryCount, modelIndex + 1)
+      console.log('Empty response from OpenRouter, retrying...')
+      if (retryCount < 2) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        return callGeminiAPI(prompt, systemInstruction, retryCount + 1)
       }
     }
     
-    console.log(`Success with model: ${model}`)
+    console.log('OpenRouter API success')
     return content
   } catch (error: any) {
-    // On network errors, retry with next model
-    if (modelIndex < FREE_MODELS.length - 1 && !error.message.includes('not configured')) {
-      console.log(`Network error with ${model}, trying fallback...`)
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      return callGeminiAPI(prompt, systemInstruction, retryCount, modelIndex + 1)
-    }
+    console.error('OpenRouter API call failed:', error.message)
     
-    // Final retry attempt
+    // Retry on network errors
     if (retryCount < 2 && !error.message.includes('not configured') && !error.message.includes('Too Many Requests')) {
       console.log(`Retrying API call (attempt ${retryCount + 1})...`)
       await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 2000))
-      return callGeminiAPI(prompt, systemInstruction, retryCount + 1, 0)
+      return callGeminiAPI(prompt, systemInstruction, retryCount + 1)
     }
     
     throw error
   }
 }
 
-// Helper function to call OpenRouter Vision API with rate limiting
-async function callGeminiVisionAPI(imageBase64: string, prompt: string, retryCount = 0) {
+// Helper function to call OpenRouter Vision API
+async function callGeminiVisionAPI(imageBase64: string, prompt: string, retryCount = 0): Promise<string> {
   const apiKey = Deno.env.get('OPENROUTER_API_KEY')
   if (!apiKey) {
     throw new Error('OPENROUTER_API_KEY not configured')
@@ -1918,6 +1894,8 @@ async function callGeminiVisionAPI(imageBase64: string, prompt: string, retryCou
 
   // Check rate limits before making call
   await checkRateLimit()
+
+  console.log(`Calling OpenRouter Vision API (attempt ${retryCount + 1})`)
 
   try {
     const response = await fetch(
@@ -1952,31 +1930,33 @@ async function callGeminiVisionAPI(imageBase64: string, prompt: string, retryCou
 
     const data = await response.json()
 
-    // Handle rate limit errors from API
     if (!response.ok) {
+      console.error('OpenRouter Vision API error:', data)
+      
       if (response.status === 429) {
-        console.error('OpenRouter Vision API rate limit exceeded')
+        if (retryCount < 3) {
+          const waitTime = Math.pow(2, retryCount + 1) * 2000
+          console.log(`Rate limited. Waiting ${waitTime/1000}s before retry...`)
+          await new Promise(resolve => setTimeout(resolve, waitTime))
+          return callGeminiVisionAPI(imageBase64, prompt, retryCount + 1)
+        }
         throw new Error('Too Many Requests')
       }
       
-      // Check for error in response body
       if (data.error) {
-        console.error('OpenRouter Vision API error:', data.error)
-        throw new Error(data.error.message || 'API error')
+        throw new Error(data.error.message || 'OpenRouter Vision API error')
       }
       
       throw new Error(`OpenRouter Vision API error: ${response.statusText}`)
     }
 
-    return data.choices?.[0]?.message?.content || ''
+    const content = data.choices?.[0]?.message?.content || ''
+    console.log('OpenRouter Vision API success')
+    return content
   } catch (error: any) {
-    // Don't retry on rate limit errors
-    if (error.message.includes('Too Many Requests')) {
-      throw error
-    }
+    console.error('OpenRouter Vision API call failed:', error.message)
     
-    // Retry on network errors (max 2 retries)
-    if (retryCount < 2 && !error.message.includes('not configured')) {
+    if (retryCount < 2 && !error.message.includes('not configured') && !error.message.includes('Too Many Requests')) {
       console.log(`Retrying Vision API call (attempt ${retryCount + 1})...`)
       await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 1000))
       return callGeminiVisionAPI(imageBase64, prompt, retryCount + 1)
@@ -2200,7 +2180,199 @@ function filterExpensesByAI(parsedQuery: any, expenseList: any[]): any[] {
   })
 }
 
-// AI-Powered Natural Language Search & Analytics with OpenRouter AI
+// Smart local search function - used as fallback when AI is unavailable
+function smartLocalSearch(query: string, expenseList: any[]) {
+  const queryLower = query.toLowerCase().trim()
+  
+  // Category mappings for flexible search
+  const categoryMappings: Record<string, string[]> = {
+    'food': ['food', 'dining', 'restaurant', 'meal', 'lunch', 'dinner', 'breakfast', 'coffee', 'cafe', 'eat', 'snack', 'pizza', 'burger'],
+    'groceries': ['groceries', 'grocery', 'supermarket', 'market', 'vegetables', 'fruits', 'produce'],
+    'transport': ['transport', 'travel', 'uber', 'taxi', 'bus', 'train', 'fuel', 'gas', 'petrol', 'ride', 'commute', 'car'],
+    'entertainment': ['entertainment', 'movie', 'netflix', 'spotify', 'games', 'fun', 'concert', 'show', 'music'],
+    'utilities': ['utilities', 'electric', 'water', 'internet', 'phone', 'bill', 'rent', 'electricity', 'wifi'],
+    'shopping': ['shopping', 'clothes', 'amazon', 'online', 'purchase', 'buy', 'store', 'mall'],
+    'health': ['health', 'medical', 'doctor', 'medicine', 'pharmacy', 'hospital', 'clinic', 'gym', 'fitness'],
+    'education': ['education', 'school', 'course', 'book', 'tuition', 'class', 'study', 'learn', 'training'],
+  }
+  
+  // Detect if it's an analytical query
+  const isAnalytical = /how much|total|sum|average|avg|spent|spending|compare|vs|versus|breakdown|most|least|biggest|smallest|highest|lowest|top/.test(queryLower)
+  
+  // Date filter detection
+  let dateFilter: string | null = null
+  const now = new Date()
+  
+  if (queryLower.includes('today')) {
+    dateFilter = 'today'
+  } else if (queryLower.includes('yesterday')) {
+    dateFilter = 'yesterday'
+  } else if (queryLower.includes('this week') || queryLower.includes('past week')) {
+    dateFilter = 'this_week'
+  } else if (queryLower.includes('last week') || queryLower.includes('previous week')) {
+    dateFilter = 'last_week'
+  } else if (queryLower.includes('this month') || queryLower.includes('current month')) {
+    dateFilter = 'this_month'
+  } else if (queryLower.includes('last month') || queryLower.includes('previous month')) {
+    dateFilter = 'last_month'
+  } else if (queryLower.includes('this year')) {
+    dateFilter = 'this_year'
+  }
+  
+  // Amount filter detection
+  let minAmount: number | null = null
+  let maxAmount: number | null = null
+  
+  const overMatch = queryLower.match(/over\s*৳?\s*(\d+)|more\s+than\s*৳?\s*(\d+)|above\s*৳?\s*(\d+)|>\s*৳?\s*(\d+)/)
+  const underMatch = queryLower.match(/under\s*৳?\s*(\d+)|less\s+than\s*৳?\s*(\d+)|below\s*৳?\s*(\d+)|<\s*৳?\s*(\d+)/)
+  
+  if (overMatch) {
+    minAmount = parseInt(overMatch[1] || overMatch[2] || overMatch[3] || overMatch[4])
+  }
+  if (underMatch) {
+    maxAmount = parseInt(underMatch[1] || underMatch[2] || underMatch[3] || underMatch[4])
+  }
+  
+  // Find matching category from query
+  let matchCategory: string | null = null
+  for (const [category, keywords] of Object.entries(categoryMappings)) {
+    if (keywords.some(k => queryLower.includes(k))) {
+      matchCategory = category
+      break
+    }
+  }
+  
+  // Apply date filter
+  const filterByDate = (exp: any) => {
+    if (!dateFilter) return true
+    const expDate = new Date(exp.createdAt)
+    
+    switch (dateFilter) {
+      case 'today':
+        return expDate.toDateString() === now.toDateString()
+      case 'yesterday':
+        const yesterday = new Date(now)
+        yesterday.setDate(yesterday.getDate() - 1)
+        return expDate.toDateString() === yesterday.toDateString()
+      case 'this_week':
+        const weekStart = new Date(now)
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay())
+        return expDate >= weekStart
+      case 'last_week':
+        const lastWeekEnd = new Date(now)
+        lastWeekEnd.setDate(lastWeekEnd.getDate() - lastWeekEnd.getDay())
+        const lastWeekStart = new Date(lastWeekEnd)
+        lastWeekStart.setDate(lastWeekStart.getDate() - 7)
+        return expDate >= lastWeekStart && expDate < lastWeekEnd
+      case 'this_month':
+        return expDate.getMonth() === now.getMonth() && expDate.getFullYear() === now.getFullYear()
+      case 'last_month':
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+        const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+        return expDate >= lastMonth && expDate < thisMonthStart
+      case 'this_year':
+        return expDate.getFullYear() === now.getFullYear()
+      default:
+        return true
+    }
+  }
+  
+  // Filter expenses
+  const filteredExpenses = expenseList.filter((exp: any) => {
+    if (!filterByDate(exp)) return false
+    if (matchCategory && exp.category?.toLowerCase() !== matchCategory) return false
+    if (minAmount !== null && exp.amount < minAmount) return false
+    if (maxAmount !== null && exp.amount > maxAmount) return false
+    
+    // If no category match, do keyword search on description
+    if (!matchCategory && !isAnalytical) {
+      const searchText = `${exp.description} ${exp.category} ${exp.notes || ''}`.toLowerCase()
+      const searchTerms = queryLower.split(/\s+/).filter((t: string) => 
+        t.length > 2 && !['the', 'and', 'for', 'how', 'much', 'did', 'spend', 'on', 'my', 'all', 'show', 'find', 'get', 'expenses'].includes(t)
+      )
+      if (searchTerms.length > 0 && !searchTerms.some((term: string) => searchText.includes(term))) {
+        return false
+      }
+    }
+    
+    return true
+  })
+  
+  // Handle analytical queries
+  if (isAnalytical) {
+    // Build category breakdown
+    const categoryTotals: Record<string, { total: number; count: number }> = {}
+    let grandTotal = 0
+    
+    filteredExpenses.forEach((exp: any) => {
+      const cat = exp.category || 'other'
+      if (!categoryTotals[cat]) categoryTotals[cat] = { total: 0, count: 0 }
+      categoryTotals[cat].total += exp.amount
+      categoryTotals[cat].count++
+      grandTotal += exp.amount
+    })
+    
+    const sortedCategories = Object.entries(categoryTotals).sort(([, a], [, b]) => b.total - a.total)
+    const topCategory = sortedCategories[0]
+    const lowestCategory = sortedCategories[sortedCategories.length - 1]
+    
+    let analysisText = ''
+    
+    if (queryLower.includes('most') || queryLower.includes('highest') || queryLower.includes('biggest') || queryLower.includes('top')) {
+      analysisText = topCategory 
+        ? `Your top spending category is "${topCategory[0]}" with ৳${topCategory[1].total.toFixed(2)} (${topCategory[1].count} expenses)`
+        : 'No expenses found for analysis'
+    } else if (queryLower.includes('least') || queryLower.includes('lowest') || queryLower.includes('smallest')) {
+      analysisText = lowestCategory 
+        ? `Your lowest spending category is "${lowestCategory[0]}" with ৳${lowestCategory[1].total.toFixed(2)} (${lowestCategory[1].count} expenses)`
+        : 'No expenses found for analysis'
+    } else if (queryLower.includes('total') || queryLower.includes('how much') || queryLower.includes('spent')) {
+      const categoryLabel = matchCategory ? ` on ${matchCategory}` : ''
+      const dateLabel = dateFilter ? ` (${dateFilter.replace('_', ' ')})` : ''
+      analysisText = `Total spent${categoryLabel}${dateLabel}: ৳${grandTotal.toFixed(2)} across ${filteredExpenses.length} expense(s)`
+    } else if (queryLower.includes('average') || queryLower.includes('avg')) {
+      const avg = filteredExpenses.length > 0 ? grandTotal / filteredExpenses.length : 0
+      analysisText = `Average expense: ৳${avg.toFixed(2)}`
+    } else if (queryLower.includes('breakdown') || queryLower.includes('compare')) {
+      analysisText = `Spending breakdown by category`
+    } else {
+      analysisText = topCategory 
+        ? `Your top category is "${topCategory[0]}" with ৳${topCategory[1].total.toFixed(2)}`
+        : 'No expenses found for analysis'
+    }
+    
+    return {
+      type: 'analytics',
+      data: {
+        analysisResult: {
+          text: analysisText,
+          breakdown: categoryTotals,
+          total: grandTotal,
+          count: filteredExpenses.length,
+          topCategory: topCategory?.[0] || null,
+          topAmount: topCategory?.[1]?.total || 0
+        },
+        explanation: analysisText,
+        expenses: filteredExpenses.slice(0, 5),
+        aiPowered: false,
+        fallbackUsed: true
+      }
+    }
+  }
+  
+  // Return search results
+  return {
+    type: 'results',
+    data: filteredExpenses,
+    explanation: filteredExpenses.length > 0 
+      ? `Found ${filteredExpenses.length} expense(s)${matchCategory ? ` in ${matchCategory}` : ''}${dateFilter ? ` from ${dateFilter.replace('_', ' ')}` : ''}`
+      : `No expenses found matching your query`,
+    aiPowered: false,
+    fallbackUsed: true
+  }
+}
+
+// AI-Powered Natural Language Search with Smart Fallback
 app.get('/make-server-f573a585/search', requireAuth, async (c) => {
   try {
     const userId = c.get('userId')
@@ -2241,37 +2413,36 @@ app.get('/make-server-f573a585/search', requireAuth, async (c) => {
       }
     }
     
-    // Check for OpenRouter API Key
-    const apiKey = Deno.env.get('OPENROUTER_API_KEY')
-    console.log('OPENROUTER_API_KEY configured:', !!apiKey)
+    // Check for API Keys (try Gemini first, then OpenRouter)
+    const geminiKey = Deno.env.get('GEMINI_API_KEY')
+    const openRouterKey = Deno.env.get('OPENROUTER_API_KEY')
+    const hasAIKey = geminiKey || openRouterKey
     
-    if (!apiKey) {
-      return c.json({ 
-        type: 'error',
-        error: 'AI search is not configured. Please set up OPENROUTER_API_KEY.',
-        data: []
-      }, 503)
-    }
+    console.log('GEMINI_API_KEY configured:', !!geminiKey)
+    console.log('OPENROUTER_API_KEY configured:', !!openRouterKey)
     
-    // Build expense summary for AI context
-    const categoryTotals: Record<string, number> = {}
-    let totalSpent = 0
-    expenseList.forEach((exp: any) => {
-      const cat = exp.category || 'other'
-      categoryTotals[cat] = (categoryTotals[cat] || 0) + exp.amount
-      totalSpent += exp.amount
-    })
-    
-    const expenseSummary = Object.entries(categoryTotals)
-      .map(([cat, total]) => `${cat}: ৳${total.toFixed(2)}`)
-      .join(', ')
-    
-    // Build detailed expense list for AI
-    const expenseDetails = expenseList.slice(0, 50).map((exp: any, i: number) => 
-      `${i+1}. ${exp.description} - ৳${exp.amount} (${exp.category || 'other'}) on ${exp.createdAt?.split('T')[0] || 'unknown date'}`
-    ).join('\n')
-    
-    const systemInstruction = `You are an intelligent financial assistant analyzing user expenses.
+    // Try AI search if keys available
+    if (hasAIKey) {
+      try {
+        // Build expense summary for AI context
+        const categoryTotals: Record<string, number> = {}
+        let totalSpent = 0
+        expenseList.forEach((exp: any) => {
+          const cat = exp.category || 'other'
+          categoryTotals[cat] = (categoryTotals[cat] || 0) + exp.amount
+          totalSpent += exp.amount
+        })
+        
+        const expenseSummary = Object.entries(categoryTotals)
+          .map(([cat, total]) => `${cat}: ৳${total.toFixed(2)}`)
+          .join(', ')
+        
+        // Build detailed expense list for AI
+        const expenseDetails = expenseList.slice(0, 50).map((exp: any, i: number) => 
+          `${i+1}. ${exp.description} - ৳${exp.amount} (${exp.category || 'other'}) on ${exp.createdAt?.split('T')[0] || 'unknown date'}`
+        ).join('\n')
+        
+        const systemInstruction = `You are an intelligent financial assistant analyzing user expenses.
 
 Available categories: food, groceries, transport, entertainment, utilities, shopping, health, education, other.
 
@@ -2327,98 +2498,104 @@ CRITICAL RULES:
 3. Return ONLY valid JSON, no markdown code blocks
 4. The "explanation" and "result.text" should contain ACTUAL calculated values, not placeholders`
 
-    const prompt = `User query: "${query}"
+        const prompt = `User query: "${query}"
 
 Based on the expense data provided, analyze this query and return the appropriate JSON response.`
-    
-    console.log('Calling AI with query:', query)
-    
-    // Call AI
-    const aiResponse = await callGeminiAPI(prompt, systemInstruction)
-    console.log('AI raw response:', aiResponse)
-    
-    // Parse AI response
-    const cleanResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-    let parsedQuery
-    try {
-      parsedQuery = JSON.parse(cleanResponse)
-      console.log('AI parsed response:', JSON.stringify(parsedQuery, null, 2))
-    } catch (parseError) {
-      console.error('Failed to parse AI response:', parseError)
-      return c.json({ 
-        type: 'error',
-        error: 'AI returned an invalid response. Please try rephrasing your query.',
-        rawResponse: cleanResponse,
-        data: []
-      }, 500)
-    }
-    
-    // Handle analytics queries
-    if (parsedQuery.type === 'analytics') {
-      console.log('Processing analytics query')
-      
-      // If AI provided direct result, use it
-      if (parsedQuery.result) {
-        const analyticsResult = {
-          type: 'analytics',
-          data: {
-            analysisResult: parsedQuery.result,
-            explanation: parsedQuery.explanation || parsedQuery.result.text,
-            expenses: expenseList.slice(0, 5),
-            aiPowered: true
+        
+        console.log('Calling AI with query:', query)
+        
+        // Call AI
+        const aiResponse = await callGeminiAPI(prompt, systemInstruction)
+        console.log('AI raw response:', aiResponse)
+        
+        // Parse AI response
+        const cleanResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+        let parsedQuery
+        parsedQuery = JSON.parse(cleanResponse)
+        console.log('AI parsed response:', JSON.stringify(parsedQuery, null, 2))
+        
+        // Handle analytics queries
+        if (parsedQuery.type === 'analytics') {
+          console.log('Processing analytics query')
+          
+          // If AI provided direct result, use it
+          if (parsedQuery.result) {
+            const analyticsResult = {
+              type: 'analytics',
+              data: {
+                analysisResult: parsedQuery.result,
+                explanation: parsedQuery.explanation || parsedQuery.result.text,
+                expenses: expenseList.slice(0, 5),
+                aiPowered: true
+              }
+            }
+            
+            // Cache result
+            await kv.set(searchCacheKey, {
+              data: analyticsResult,
+              cachedAt: new Date().toISOString()
+            })
+            
+            return c.json(analyticsResult)
           }
+          
+          // Otherwise use handleAnalyticsQuery
+          const analyticsResult = await handleAnalyticsQuery(parsedQuery, expenseList, query)
+          
+          if (analyticsResult.data) {
+            analyticsResult.data.aiExplanation = parsedQuery.explanation
+            analyticsResult.data.aiPowered = true
+          }
+          
+          // Cache result
+          await kv.set(searchCacheKey, {
+            data: analyticsResult,
+            cachedAt: new Date().toISOString()
+          })
+          
+          return c.json(analyticsResult)
+        }
+        
+        // Handle search queries - filter expenses based on AI understanding
+        console.log('Processing search query')
+        const results = filterExpensesByAI(parsedQuery, expenseList)
+        
+        const searchResult = { 
+          type: 'results', 
+          data: results,
+          explanation: parsedQuery.explanation || `Found ${results.length} matching expense(s)`,
+          aiPowered: true
         }
         
         // Cache result
         await kv.set(searchCacheKey, {
-          data: analyticsResult,
+          data: searchResult,
           cachedAt: new Date().toISOString()
         })
         
-        return c.json(analyticsResult)
+        return c.json(searchResult)
+        
+      } catch (aiError: any) {
+        // AI failed - use smart local fallback
+        console.log('AI search failed, using smart local fallback:', aiError?.message || aiError)
+        
+        const fallbackResult = smartLocalSearch(query, expenseList)
+        console.log('Fallback result:', JSON.stringify(fallbackResult, null, 2))
+        
+        return c.json(fallbackResult)
       }
-      
-      // Otherwise use handleAnalyticsQuery
-      const analyticsResult = await handleAnalyticsQuery(parsedQuery, expenseList, query)
-      
-      if (analyticsResult.data) {
-        analyticsResult.data.aiExplanation = parsedQuery.explanation
-        analyticsResult.data.aiPowered = true
-      }
-      
-      // Cache result
-      await kv.set(searchCacheKey, {
-        data: analyticsResult,
-        cachedAt: new Date().toISOString()
-      })
-      
-      return c.json(analyticsResult)
     }
     
-    // Handle search queries - filter expenses based on AI understanding
-    console.log('Processing search query')
-    const results = filterExpensesByAI(parsedQuery, expenseList)
-    
-    const searchResult = { 
-      type: 'results', 
-      data: results,
-      explanation: parsedQuery.explanation || `Found ${results.length} matching expense(s)`,
-      aiPowered: true
-    }
-    
-    // Cache result
-    await kv.set(searchCacheKey, {
-      data: searchResult,
-      cachedAt: new Date().toISOString()
-    })
-    
-    return c.json(searchResult)
+    // No AI keys configured - use smart local search
+    console.log('No AI keys configured, using smart local search')
+    const localResult = smartLocalSearch(query, expenseList)
+    return c.json(localResult)
     
   } catch (error: any) {
-    console.error('AI Search error:', error?.message || error)
+    console.error('Search error:', error?.message || error)
     return c.json({ 
       type: 'error',
-      error: `AI search failed: ${error?.message || 'Unknown error'}. Please try again.`,
+      error: `Search failed: ${error?.message || 'Unknown error'}. Please try again.`,
       data: []
     }, 500)
   }
@@ -2540,6 +2717,185 @@ CRITICAL RULES:
   }
 })
 
+// Smart local insights generator - used when AI is unavailable
+function generateLocalInsights(expenseList: any[], budgetList: any[]) {
+  const now = new Date()
+  
+  // Filter expenses for this month and last month
+  const thisMonth = expenseList.filter((exp: any) => {
+    const expDate = new Date(exp.createdAt)
+    return expDate.getMonth() === now.getMonth() && expDate.getFullYear() === now.getFullYear()
+  })
+  
+  const lastMonth = expenseList.filter((exp: any) => {
+    const expDate = new Date(exp.createdAt)
+    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    return expDate.getMonth() === lastMonthDate.getMonth() && expDate.getFullYear() === lastMonthDate.getFullYear()
+  })
+  
+  // Calculate totals
+  const totalThisMonth = thisMonth.reduce((sum: number, exp: any) => sum + exp.amount, 0)
+  const totalLastMonth = lastMonth.reduce((sum: number, exp: any) => sum + exp.amount, 0)
+  const avgExpense = thisMonth.length > 0 ? totalThisMonth / thisMonth.length : 0
+  
+  // Category breakdown
+  const categoryTotals: Record<string, { total: number; count: number }> = {}
+  thisMonth.forEach((exp: any) => {
+    const cat = exp.category || 'other'
+    if (!categoryTotals[cat]) categoryTotals[cat] = { total: 0, count: 0 }
+    categoryTotals[cat].total += exp.amount
+    categoryTotals[cat].count++
+  })
+  
+  // Find top spending category
+  const sortedCategories = Object.entries(categoryTotals).sort(([, a], [, b]) => b.total - a.total)
+  const topCategory = sortedCategories[0]
+  
+  // Generate smart insights
+  const insights: any[] = []
+  const recommendations: any[] = []
+  const patterns: any[] = []
+  
+  // Spending trend insight
+  if (totalLastMonth > 0) {
+    const changePercent = ((totalThisMonth - totalLastMonth) / totalLastMonth) * 100
+    if (changePercent > 20) {
+      insights.push({
+        type: 'spending_trend',
+        severity: 'warning',
+        message: `Your spending is up ${changePercent.toFixed(0)}% compared to last month. Consider reviewing your expenses.`,
+        value: changePercent
+      })
+      recommendations.push({
+        priority: 'high',
+        action: 'Review recent expenses and identify areas to cut back',
+        potential_savings: totalThisMonth * 0.1
+      })
+    } else if (changePercent < -10) {
+      insights.push({
+        type: 'spending_trend',
+        severity: 'info',
+        message: `Great job! Your spending is down ${Math.abs(changePercent).toFixed(0)}% compared to last month.`,
+        value: changePercent
+      })
+    } else {
+      insights.push({
+        type: 'spending_trend',
+        severity: 'info',
+        message: `Your spending is ${changePercent >= 0 ? 'slightly up' : 'slightly down'} compared to last month.`,
+        value: changePercent
+      })
+    }
+  }
+  
+  // Top category insight
+  if (topCategory) {
+    const categoryPercent = (topCategory[1].total / totalThisMonth) * 100
+    insights.push({
+      type: 'category_alert',
+      severity: categoryPercent > 50 ? 'warning' : 'info',
+      message: `${topCategory[0].charAt(0).toUpperCase() + topCategory[0].slice(1)} is your highest spending category at ৳${topCategory[1].total.toFixed(2)} (${categoryPercent.toFixed(0)}% of total)`,
+      category: topCategory[0]
+    })
+    
+    if (categoryPercent > 40) {
+      recommendations.push({
+        priority: 'medium',
+        action: `Consider setting a budget for ${topCategory[0]} to control spending`,
+        potential_savings: topCategory[1].total * 0.15
+      })
+    }
+  }
+  
+  // Budget status check
+  budgetList.forEach((budget: any) => {
+    const catSpending = categoryTotals[budget.category]?.total || 0
+    const percentage = (catSpending / budget.limit) * 100
+    if (percentage > 100) {
+      insights.push({
+        type: 'budget_status',
+        severity: 'alert',
+        message: `⚠️ You've exceeded your ${budget.category} budget by ৳${(catSpending - budget.limit).toFixed(2)}`,
+        percentage
+      })
+    } else if (percentage > 80) {
+      insights.push({
+        type: 'budget_status',
+        severity: 'warning',
+        message: `You've used ${percentage.toFixed(0)}% of your ${budget.category} budget`,
+        percentage
+      })
+    }
+  })
+  
+  // Average expense pattern
+  if (avgExpense > 0) {
+    patterns.push({
+      pattern: `Your average expense is ৳${avgExpense.toFixed(2)}`,
+      suggestion: avgExpense > 500 ? 'Consider breaking down large expenses into smaller, tracked purchases' : 'Good expense tracking habits!'
+    })
+  }
+  
+  // Day of week pattern
+  const dayExpenses: number[] = [0, 0, 0, 0, 0, 0, 0]
+  thisMonth.forEach((exp: any) => {
+    const day = new Date(exp.createdAt).getDay()
+    dayExpenses[day] += exp.amount
+  })
+  const maxDay = dayExpenses.indexOf(Math.max(...dayExpenses))
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  if (Math.max(...dayExpenses) > 0) {
+    patterns.push({
+      pattern: `You tend to spend most on ${dayNames[maxDay]}s`,
+      suggestion: `Plan your ${dayNames[maxDay]} activities to avoid impulse spending`
+    })
+  }
+  
+  // Month-end prediction
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+  const dayOfMonth = now.getDate()
+  const dailyAvg = totalThisMonth / dayOfMonth
+  const predictedTotal = dailyAvg * daysInMonth
+  
+  // Build summary
+  let summary = ''
+  if (totalThisMonth > 0) {
+    summary = `You've spent ৳${totalThisMonth.toFixed(2)} this month across ${thisMonth.length} expenses. `
+    if (totalLastMonth > 0) {
+      summary += totalThisMonth > totalLastMonth 
+        ? `This is higher than last month's ৳${totalLastMonth.toFixed(2)}.`
+        : `This is lower than last month's ৳${totalLastMonth.toFixed(2)}.`
+    }
+  } else {
+    summary = 'No expenses recorded this month yet.'
+  }
+  
+  return {
+    insights: insights.length > 0 ? insights : [{
+      type: 'info',
+      severity: 'info',
+      message: `You have ${thisMonth.length} expenses this month totaling ৳${totalThisMonth.toFixed(2)}`,
+      value: totalThisMonth
+    }],
+    summary,
+    recommendations,
+    patterns,
+    predictions: {
+      month_end_total: predictedTotal,
+      confidence: dayOfMonth > 15 ? 'medium' : 'low',
+      reasoning: `Based on daily average of ৳${dailyAvg.toFixed(2)} over ${dayOfMonth} days`
+    },
+    stats: {
+      thisMonth: totalThisMonth,
+      lastMonth: totalLastMonth,
+      change: totalThisMonth - totalLastMonth,
+      changePercentage: totalLastMonth > 0 ? ((totalThisMonth - totalLastMonth) / totalLastMonth * 100) : 0
+    },
+    generatedAt: new Date().toISOString(),
+    aiPowered: false
+  }
+}
+
 // AI-Powered Spending Insights with caching
 app.get('/make-server-f573a585/ai/insights', requireAuth, async (c) => {
   try {
@@ -2575,40 +2931,17 @@ app.get('/make-server-f573a585/ai/insights', requireAuth, async (c) => {
       })
     }
     
-    // Check if API key is configured
-    const apiKey = Deno.env.get('OPENROUTER_API_KEY')
-    if (!apiKey) {
-      console.log('OPENROUTER_API_KEY not configured, returning basic stats without AI insights')
-      // Calculate basic stats without AI
-      const now = new Date()
-      const thisMonth = expenseList.filter((exp: any) => {
-        const expDate = new Date(exp.createdAt)
-        return expDate.getMonth() === now.getMonth() && expDate.getFullYear() === now.getFullYear()
-      })
-      const lastMonth = expenseList.filter((exp: any) => {
-        const expDate = new Date(exp.createdAt)
-        const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-        return expDate.getMonth() === lastMonthDate.getMonth() && expDate.getFullYear() === lastMonthDate.getFullYear()
-      })
-      const totalThisMonth = thisMonth.reduce((sum: number, exp: any) => sum + exp.amount, 0)
-      const totalLastMonth = lastMonth.reduce((sum: number, exp: any) => sum + exp.amount, 0)
-      
-      return c.json({
-        insights: [{
-          type: 'info',
-          severity: 'info',
-          message: 'AI insights are not available. Configure OPENROUTER_API_KEY for advanced analytics.',
-          value: 0
-        }],
-        summary: `You have ${expenseList.length} expenses tracked. AI insights require configuration.`,
-        recommendations: [],
-        stats: {
-          thisMonth: totalThisMonth,
-          lastMonth: totalLastMonth,
-          change: totalThisMonth - totalLastMonth,
-          changePercentage: totalLastMonth > 0 ? ((totalThisMonth - totalLastMonth) / totalLastMonth) * 100 : 0
-        }
-      })
+    // Check for API keys (Gemini first, then OpenRouter)
+    const geminiKey = Deno.env.get('GEMINI_API_KEY')
+    const openRouterKey = Deno.env.get('OPENROUTER_API_KEY')
+    const hasAIKey = geminiKey || openRouterKey
+    
+    console.log('AI Insights - GEMINI_API_KEY:', !!geminiKey, 'OPENROUTER_API_KEY:', !!openRouterKey)
+    
+    if (!hasAIKey) {
+      console.log('No AI keys configured, using smart local insights')
+      const localInsights = generateLocalInsights(expenseList, budgetList)
+      return c.json(localInsights)
     }
     
     // Calculate statistics
@@ -2625,62 +2958,193 @@ app.get('/make-server-f573a585/ai/insights', requireAuth, async (c) => {
     })
     
     const categoryTotals: any = {}
+    const categoryThisMonth: any = {}
+    const categoryLastMonth: any = {}
     thisMonth.forEach((exp: any) => {
       const cat = exp.category || 'other'
       categoryTotals[cat] = (categoryTotals[cat] || 0) + exp.amount
+      categoryThisMonth[cat] = (categoryThisMonth[cat] || 0) + exp.amount
+    })
+    lastMonth.forEach((exp: any) => {
+      const cat = exp.category || 'other'
+      categoryLastMonth[cat] = (categoryLastMonth[cat] || 0) + exp.amount
     })
     
     const totalThisMonth = thisMonth.reduce((sum: number, exp: any) => sum + exp.amount, 0)
     const totalLastMonth = lastMonth.reduce((sum: number, exp: any) => sum + exp.amount, 0)
     const avgExpense = thisMonth.length > 0 ? totalThisMonth / thisMonth.length : 0
     
-    // Build context for AI
-    const context = `User's Expense Data:
-- Total expenses this month: ৳${totalThisMonth.toFixed(2)} (${thisMonth.length} expenses)
-- Total last month: ৳${totalLastMonth.toFixed(2)} (${lastMonth.length} expenses)
-- Average expense: ৳${avgExpense.toFixed(2)}
-- Category breakdown: ${JSON.stringify(categoryTotals)}
-- Active budgets: ${budgetList.map((b: any) => `${b.category}: ৳${b.limit}`).join(', ')}
+    // Calculate additional metrics for comprehensive analysis
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+    const dayOfMonth = now.getDate()
+    const dailyAvgThisMonth = totalThisMonth / dayOfMonth
+    const projectedMonthEnd = dailyAvgThisMonth * daysInMonth
+    const daysRemaining = daysInMonth - dayOfMonth
+    
+    // Day of week analysis
+    const dayExpenses: Record<string, number> = {}
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    thisMonth.forEach((exp: any) => {
+      const day = dayNames[new Date(exp.createdAt).getDay()]
+      dayExpenses[day] = (dayExpenses[day] || 0) + exp.amount
+    })
+    
+    // Find highest expense
+    const highestExpense = thisMonth.reduce((max: any, exp: any) => 
+      exp.amount > (max?.amount || 0) ? exp : max, null)
+    
+    // Find top category
+    const sortedCategories = Object.entries(categoryThisMonth).sort(([,a]: any, [,b]: any) => b - a)
+    const topCategory = sortedCategories[0]
+    const bottomCategory = sortedCategories[sortedCategories.length - 1]
+    
+    // Build comprehensive context for AI
+    const context = `=== COMPREHENSIVE EXPENSE ANALYSIS ===
 
-Top 5 Recent Expenses:
-${expenseList.slice(0, 5).map((exp: any) => `- ${exp.description} (${exp.category}): ৳${exp.amount}`).join('\n')}`
+📅 CURRENT PERIOD: ${now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+Day ${dayOfMonth} of ${daysInMonth} (${daysRemaining} days remaining)
 
-    const systemInstruction = `You are a personal finance advisor analyzing a user's spending patterns. 
-Provide actionable insights and recommendations in JSON format.
+💰 FINANCIAL SUMMARY:
+- This Month Total: ৳${totalThisMonth.toFixed(2)} (${thisMonth.length} transactions)
+- Last Month Total: ৳${totalLastMonth.toFixed(2)} (${lastMonth.length} transactions)
+- Month-over-Month Change: ${totalLastMonth > 0 ? ((totalThisMonth - totalLastMonth) / totalLastMonth * 100).toFixed(1) : 'N/A'}%
+- Daily Average (this month): ৳${dailyAvgThisMonth.toFixed(2)}
+- Average per Transaction: ৳${avgExpense.toFixed(2)}
+- Projected Month-End: ৳${projectedMonthEnd.toFixed(2)}
 
-Return this structure:
+📊 CATEGORY BREAKDOWN (This Month):
+${sortedCategories.map(([cat, amt]: any) => {
+  const lastAmt = categoryLastMonth[cat] || 0
+  const change = lastAmt > 0 ? ((amt - lastAmt) / lastAmt * 100).toFixed(1) : 'New'
+  const percent = totalThisMonth > 0 ? (amt / totalThisMonth * 100).toFixed(1) : 0
+  return `- ${cat}: ৳${amt.toFixed(2)} (${percent}% of total) | Last month: ৳${lastAmt.toFixed(2)} | Change: ${change}%`
+}).join('\n')}
+
+📈 SPENDING PATTERNS:
+- Top Spending Category: ${topCategory ? `${topCategory[0]} (৳${(topCategory[1] as number).toFixed(2)})` : 'None'}
+- Lowest Spending Category: ${bottomCategory && sortedCategories.length > 1 ? `${bottomCategory[0]} (৳${(bottomCategory[1] as number).toFixed(2)})` : 'None'}
+- Highest Single Expense: ${highestExpense ? `৳${highestExpense.amount.toFixed(2)} - ${highestExpense.description} (${highestExpense.category})` : 'None'}
+
+📆 SPENDING BY DAY OF WEEK:
+${Object.entries(dayExpenses).sort(([,a]: any, [,b]: any) => b - a).map(([day, amt]: any) => `- ${day}: ৳${amt.toFixed(2)}`).join('\n') || 'No data'}
+
+💼 BUDGET STATUS:
+${budgetList.length > 0 ? budgetList.map((b: any) => {
+  const spent = categoryThisMonth[b.category] || 0
+  const percent = (spent / b.limit * 100).toFixed(1)
+  const remaining = b.limit - spent
+  const status = percent >= 100 ? '🔴 EXCEEDED' : percent >= 80 ? '🟡 WARNING' : '🟢 OK'
+  return `- ${b.category}: ৳${spent.toFixed(2)} / ৳${b.limit} (${percent}%) ${status} | Remaining: ৳${remaining.toFixed(2)}`
+}).join('\n') : 'No budgets set'}
+
+📝 RECENT TRANSACTIONS (Last 10):
+${expenseList.slice(0, 10).map((exp: any, i: number) => 
+  `${i+1}. ${exp.createdAt?.split('T')[0] || 'Unknown'} - ${exp.description} (${exp.category}): ৳${exp.amount}`
+).join('\n')}`
+
+    const systemInstruction = `You are an expert personal finance advisor and spending analyst. Your role is to provide COMPREHENSIVE, ACTIONABLE, and INSIGHTFUL financial analysis.
+
+Analyze the user's spending data thoroughly and return a detailed JSON response.
+
+RESPONSE STRUCTURE:
 {
   "insights": [
-    {"type": "spending_trend", "severity": "info|warning|alert", "message": "insight text", "value": number},
-    {"type": "category_alert", "severity": "info|warning|alert", "message": "insight text", "category": "category_name"},
-    {"type": "budget_status", "severity": "info|warning|alert", "message": "insight text", "percentage": number}
+    {
+      "type": "spending_trend|category_alert|budget_status|unusual_expense|savings_opportunity|comparison|prediction",
+      "severity": "info|warning|alert|success",
+      "title": "Short catchy title",
+      "message": "Detailed explanation with specific numbers and context",
+      "value": number_if_applicable,
+      "category": "category_if_applicable",
+      "actionable": true/false
+    }
   ],
-  "summary": "brief overall summary (2-3 sentences)",
+  "summary": "A comprehensive 3-4 sentence executive summary of the user's financial health this month",
   "recommendations": [
-    {"priority": "high|medium|low", "action": "specific recommendation", "potential_savings": number}
+    {
+      "priority": "high|medium|low",
+      "category": "category_this_applies_to",
+      "action": "Specific, actionable recommendation",
+      "reasoning": "Why this matters",
+      "potential_savings": estimated_monthly_savings,
+      "difficulty": "easy|medium|hard",
+      "timeframe": "immediate|this_week|this_month"
+    }
   ],
   "patterns": [
-    {"pattern": "pattern description", "suggestion": "what to do about it"}
+    {
+      "type": "daily|weekly|category|amount",
+      "pattern": "Description of the pattern identified",
+      "impact": "How this affects their finances",
+      "suggestion": "What to do about it"
+    }
   ],
   "predictions": {
-    "month_end_total": estimated_total,
+    "month_end_total": projected_amount,
+    "vs_last_month": "higher|lower|similar",
+    "vs_last_month_percent": percentage_change,
     "confidence": "high|medium|low",
-    "reasoning": "why this prediction"
-  }
+    "reasoning": "Detailed explanation of prediction",
+    "risk_factors": ["potential things that could change this"]
+  },
+  "category_analysis": [
+    {
+      "category": "category_name",
+      "status": "healthy|concerning|critical",
+      "spending": amount,
+      "trend": "increasing|decreasing|stable",
+      "vs_last_month": percentage_change,
+      "insight": "Specific insight about this category",
+      "tip": "Category-specific saving tip"
+    }
+  ],
+  "financial_health_score": {
+    "score": 1-100,
+    "label": "Excellent|Good|Fair|Needs Attention|Critical",
+    "factors": {
+      "budget_adherence": 1-100,
+      "spending_consistency": 1-100,
+      "category_balance": 1-100
+    },
+    "improvement_areas": ["area1", "area2"]
+  },
+  "quick_wins": [
+    {
+      "action": "Simple action to save money",
+      "estimated_savings": amount,
+      "effort": "low|medium|high"
+    }
+  ],
+  "alerts": [
+    {
+      "type": "budget_warning|unusual_spending|overspending",
+      "urgency": "immediate|soon|monitor",
+      "message": "Alert message",
+      "suggested_action": "What to do"
+    }
+  ]
 }
 
-Focus on:
-1. Spending trends (increasing/decreasing)
-2. Budget overspending warnings
-3. Unusual expenses or patterns
-4. Category-specific insights
-5. Savings opportunities
-6. Comparison with previous month
-7. Predictions for month-end
+ANALYSIS GUIDELINES:
+1. Be SPECIFIC with numbers - don't say "you spent a lot", say "you spent ৳X, which is Y% more than..."
+2. Provide CONTEXT - compare with last month, daily averages, budget limits
+3. Be ACTIONABLE - every insight should lead to a possible action
+4. Be ENCOURAGING - acknowledge good habits while suggesting improvements
+5. Identify PATTERNS - day of week spending, recurring expenses, category trends
+6. Calculate POTENTIAL SAVINGS - give specific amounts users could save
+7. Prioritize RELEVANCE - focus on the most impactful insights first
+8. Consider BANGLADESHI context - local cost of living, common expenses
 
-Be specific, actionable, and supportive. Use Bangladeshi Taka (৳) for amounts.`
+Generate at least:
+- 5-8 detailed insights
+- 3-5 specific recommendations
+- 2-4 identified patterns
+- Complete category analysis for top categories
+- A fair financial health score with reasoning
 
-    const prompt = `Analyze this user's spending and provide insights:\n\n${context}\n\nReturn JSON only, no markdown.`
+Use Bangladeshi Taka (৳) for all amounts. Be supportive but honest.`
+
+    const prompt = `Analyze this user's comprehensive spending data and provide detailed, actionable insights:\n\n${context}\n\nReturn JSON only, no markdown code blocks.`
     
     // Call AI with better error handling
     let insights
@@ -2691,36 +3155,16 @@ Be specific, actionable, and supportive. Use Bangladeshi Taka (৳) for amounts.
       console.log('AI Insights generated successfully')
     } catch (aiError: any) {
       console.error('AI Generation Error:', aiError.message)
-      // Return fallback insights if AI fails
-      return c.json({
-        insights: [{
-          type: 'info',
-          severity: 'info',
-          message: `You've spent ৳${totalThisMonth.toFixed(2)} this month across ${thisMonth.length} transactions.`,
-          value: totalThisMonth
-        }],
-        summary: `Your spending this month is ৳${totalThisMonth.toFixed(2)}, ${totalThisMonth > totalLastMonth ? 'up' : 'down'} from last month's ৳${totalLastMonth.toFixed(2)}.`,
-        recommendations: [],
-        patterns: [],
-        predictions: {
-          month_end_total: totalThisMonth,
-          confidence: 'low',
-          reasoning: 'Based on current spending'
-        },
-        stats: {
-          thisMonth: totalThisMonth,
-          lastMonth: totalLastMonth,
-          change: totalThisMonth - totalLastMonth,
-          changePercentage: totalLastMonth > 0 ? ((totalThisMonth - totalLastMonth) / totalLastMonth * 100) : 0
-        },
-        generatedAt: new Date().toISOString(),
-        error: 'AI insights temporarily unavailable. Using basic statistics.'
-      })
+      // Return smart local insights if AI fails
+      console.log('Using smart local insights fallback')
+      const localInsights = generateLocalInsights(expenseList, budgetList)
+      return c.json(localInsights)
     }
     
     const result = {
       ...insights,
       generatedAt: new Date().toISOString(),
+      aiPowered: true,
       stats: {
         thisMonth: totalThisMonth,
         lastMonth: totalLastMonth,
@@ -2738,31 +3182,38 @@ Be specific, actionable, and supportive. Use Bangladeshi Taka (৳) for amounts.
     return c.json(result)
   } catch (error: any) {
     console.error('Error in insights endpoint:', error.message, error.stack)
-    // Return a valid response even on error
-    return c.json({
-      insights: [{
-        type: 'info',
-        severity: 'info',
-        message: 'Insights temporarily unavailable. Please try again later.',
-        value: 0
-      }],
-      summary: 'Unable to generate insights at this time.',
-      recommendations: [],
-      patterns: [],
-      predictions: {
-        month_end_total: 0,
-        confidence: 'low',
-        reasoning: 'Data unavailable'
-      },
-      stats: {
-        thisMonth: 0,
-        lastMonth: 0,
-        change: 0,
-        changePercentage: 0
-      },
-      generatedAt: new Date().toISOString(),
-      error: 'Service temporarily unavailable'
-    }, 200) // Return 200 with error field instead of 500
+    // Return smart local insights even on error
+    try {
+      const expenses = await kv.get(`user:${c.get('userId')}:personal_expenses`)
+      const budgets = await kv.get(`user:${c.get('userId')}:budgets`)
+      const localInsights = generateLocalInsights(expenses.value || [], budgets.value || [])
+      return c.json(localInsights)
+    } catch {
+      return c.json({
+        insights: [{
+          type: 'info',
+          severity: 'info',
+          message: 'Insights temporarily unavailable. Please try again later.',
+          value: 0
+        }],
+        summary: 'Unable to generate insights at this time.',
+        recommendations: [],
+        patterns: [],
+        predictions: {
+          month_end_total: 0,
+          confidence: 'low',
+          reasoning: 'Data unavailable'
+        },
+        stats: {
+          thisMonth: 0,
+          lastMonth: 0,
+          change: 0,
+          changePercentage: 0
+        },
+        generatedAt: new Date().toISOString(),
+        aiPowered: false
+      }, 200)
+    }
   }
 })
 

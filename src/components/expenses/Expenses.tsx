@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Card, CardContent } from '../ui/card'
 import { Button } from '../ui/button'
-import { Plus, TrendingUp, Receipt, Download, Upload, Sparkles, Target, Layers, Search, Calendar } from 'lucide-react'
+import { Plus, TrendingUp, Receipt, Download, Upload, Sparkles, Target, Layers, Search, Calendar, History } from 'lucide-react'
 import { MonthlySpendingSummary } from './MonthlySpendingSummary'
 import { BudgetManager } from './BudgetManager'
 import { ExpenseList } from './ExpenseList'
@@ -9,6 +9,7 @@ import { AddExpenseDialog } from './AddExpenseDialog'
 import { ReceiptScannerDialog } from './ReceiptScannerDialog'
 import { NaturalLanguageSearch } from './NaturalLanguageSearch'
 import { TrendAnalytics } from './TrendAnalytics'
+import { MonthHistorySelector } from './MonthHistorySelector'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 
 interface ExpensesProps {
@@ -239,6 +240,9 @@ export function Expenses({
             <TabsTrigger value="budgets" className="rounded-full px-5 py-2 text-sm data-[state=active]:bg-white data-[state=active]:text-gray-900">
               Budgets HQ
             </TabsTrigger>
+            <TabsTrigger value="history" className="rounded-full px-5 py-2 text-sm data-[state=active]:bg-white data-[state=active]:text-gray-900">
+              History
+            </TabsTrigger>
             <TabsTrigger value="analytics" className="rounded-full px-5 py-2 text-sm data-[state=active]:bg-white data-[state=active]:text-gray-900">
               Trend lab
             </TabsTrigger>
@@ -255,6 +259,10 @@ export function Expenses({
               onCreateBudget={onCreateBudget}
               onDeleteBudget={onDeleteBudget}
             />
+          </TabsContent>
+
+          <TabsContent value="history" className="rounded-3xl border border-gray-100 bg-white p-4 shadow-inner">
+            <MonthHistorySelector expenses={expenses} />
           </TabsContent>
 
           <TabsContent value="analytics" className="rounded-3xl border border-gray-100 bg-white p-4 shadow-inner">
