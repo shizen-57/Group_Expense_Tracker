@@ -26,20 +26,55 @@ interface AIInsightsPageProps {
   onGetAIInsights: () => Promise<any>
 }
 
+// Cache key and expiry duration (30 minutes in ms)
+const AI_INSIGHTS_CACHE_KEY = 'ai_insights_cache'
+const AI_INSIGHTS_CACHE_EXPIRY = 30 * 60 * 1000
+
+function loadCachedInsights() {
+  try {
+    const cached = localStorage.getItem(AI_INSIGHTS_CACHE_KEY)
+    if (cached) {
+      const { data, timestamp } = JSON.parse(cached)
+      if (Date.now() - timestamp < AI_INSIGHTS_CACHE_EXPIRY) {
+        return { data, timestamp }
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load cached insights:', e)
+  }
+  return null
+}
+
+function saveCachedInsights(data: any) {
+  try {
+    localStorage.setItem(AI_INSIGHTS_CACHE_KEY, JSON.stringify({ data, timestamp: Date.now() }))
+  } catch (e) {
+    console.warn('Failed to cache insights:', e)
+  }
+}
+
 export function AIInsightsPage({ onGetAIInsights }: AIInsightsPageProps) {
-  const [insights, setInsights] = useState<any>(null)
+  // Try to load cached data on initial render
+  const cachedResult = loadCachedInsights()
+  const [insights, setInsights] = useState<any>(cachedResult?.data ?? null)
   const [loading, setLoading] = useState(false)
-  const [lastFetchTime, setLastFetchTime] = useState<number>(0)
+  const [lastFetchTime, setLastFetchTime] = useState<number>(cachedResult?.timestamp ?? 0)
   const [cooldownSeconds, setCooldownSeconds] = useState<number>(0)
   const [timeFilter, setTimeFilter] = useState<'month' | 'quarter'>('month')
+  const [cacheAge, setCacheAge] = useState<string>('')
 
-  // Update cooldown timer
+  // Update cooldown timer and cache age display
   useEffect(() => {
     const interval = setInterval(() => {
       if (lastFetchTime > 0) {
         const elapsed = Date.now() - lastFetchTime
         const remaining = Math.max(0, Math.ceil((15000 - elapsed) / 1000))
         setCooldownSeconds(remaining)
+        // Update cache age text
+        const mins = Math.floor(elapsed / 60000)
+        if (mins < 1) setCacheAge('just now')
+        else if (mins === 1) setCacheAge('1 min ago')
+        else setCacheAge(`${mins} mins ago`)
       }
     }, 1000)
     
@@ -83,6 +118,7 @@ export function AIInsightsPage({ onGetAIInsights }: AIInsightsPageProps) {
       }
       
       setInsights(data)
+      saveCachedInsights(data)
     } catch (error: any) {
       console.error('Failed to fetch insights:', error.message || error)
       
@@ -126,7 +162,11 @@ export function AIInsightsPage({ onGetAIInsights }: AIInsightsPageProps) {
   }
 
   useEffect(() => {
-    fetchInsights()
+    // Only fetch if no cached data or cache is expired
+    const cached = loadCachedInsights()
+    if (!cached) {
+      fetchInsights()
+    }
   }, [])
 
   const getCategoryIcon = (category: string) => {
@@ -262,7 +302,7 @@ export function AIInsightsPage({ onGetAIInsights }: AIInsightsPageProps) {
               Smart caching keeps responses fresh for 4 hours. A {cooldownSeconds || 15}-second cooldown protects the model.
             </p>
           </div>
-          <p className="text-xs text-blue-700">Last sync • {new Date(lastFetchTime || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+          <p className="text-xs text-blue-700">Last sync • {cacheAge || new Date(lastFetchTime || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
         </div>
       </div>
 

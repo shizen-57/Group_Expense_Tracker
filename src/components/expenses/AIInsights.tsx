@@ -17,8 +17,35 @@ interface AIInsightsProps {
   onFetchInsights: () => Promise<any>
 }
 
+// Cache key and expiry duration (30 minutes in ms)
+const AI_INSIGHTS_WIDGET_CACHE_KEY = 'ai_insights_widget_cache'
+const AI_INSIGHTS_WIDGET_CACHE_EXPIRY = 30 * 60 * 1000
+
+function loadCachedWidgetInsights() {
+  try {
+    const cached = localStorage.getItem(AI_INSIGHTS_WIDGET_CACHE_KEY)
+    if (cached) {
+      const { data, timestamp } = JSON.parse(cached)
+      if (Date.now() - timestamp < AI_INSIGHTS_WIDGET_CACHE_EXPIRY) {
+        return data
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load cached widget insights:', e)
+  }
+  return null
+}
+
+function saveCachedWidgetInsights(data: any) {
+  try {
+    localStorage.setItem(AI_INSIGHTS_WIDGET_CACHE_KEY, JSON.stringify({ data, timestamp: Date.now() }))
+  } catch (e) {
+    console.warn('Failed to cache widget insights:', e)
+  }
+}
+
 export function AIInsights({ onFetchInsights }: AIInsightsProps) {
-  const [insights, setInsights] = useState<any>(null)
+  const [insights, setInsights] = useState<any>(loadCachedWidgetInsights)
   const [loading, setLoading] = useState(false)
   const [showAll, setShowAll] = useState(false)
 
@@ -32,8 +59,10 @@ export function AIInsights({ onFetchInsights }: AIInsightsProps) {
         console.warn('AI insights returned with error:', data.error)
         // Still use the data if it has basic stats
         setInsights(data)
+        saveCachedWidgetInsights(data)
       } else {
         setInsights(data)
+        saveCachedWidgetInsights(data)
       }
     } catch (error: any) {
       console.error('Failed to fetch insights:', error.message || error)
@@ -74,7 +103,11 @@ export function AIInsights({ onFetchInsights }: AIInsightsProps) {
   }
 
   useEffect(() => {
-    fetchInsights()
+    // Only fetch if no cached data or cache is expired
+    const cached = loadCachedWidgetInsights()
+    if (!cached) {
+      fetchInsights()
+    }
   }, [])
 
   const getSeverityColor = (severity: string) => {
