@@ -489,6 +489,39 @@ export const api = {
     return data || {}
   },
 
+  // AI Copilot: natural-language agent that proposes validated actions
+  async aiAgent(token: string, messages: { role: 'user' | 'assistant'; content: string }[], page?: string) {
+    const res = await fetch(`${API_BASE}/ai/agent`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ messages, page })
+    })
+    const data = await res.json()
+    if (data.error) {
+      console.error('Copilot error:', data.error)
+      throw new Error(data.error)
+    }
+    return data
+  },
+
+  // AI Autopilot: cross-group briefing, forecasts and one-click actions
+  async getAutopilot(token: string) {
+    const res = await fetch(`${API_BASE}/ai/autopilot`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    const data = await res.json()
+    if (data.error) {
+      console.error('Autopilot error:', data.error)
+      throw new Error(data.error)
+    }
+    return data
+  },
+
   // AI Receipt Scanning
   async scanReceipt(token: string, imageBase64: string) {
     const res = await fetch(`${API_BASE}/scan-receipt`, {

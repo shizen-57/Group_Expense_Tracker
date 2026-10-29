@@ -3,6 +3,7 @@ import { cors } from 'npm:hono/cors'
 import { logger } from 'npm:hono/logger'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import * as kv from './kv_store.tsx'
+import { registerCopilotRoutes } from './copilot.ts'
 
 const app = new Hono()
 
@@ -3281,6 +3282,15 @@ app.get('/make-server-f573a585/debug/group/:id', requireAuth, async (c) => {
     console.log('Error in debug endpoint:', error)
     return c.json({ error: 'Debug failed', details: String(error) }, 500)
   }
+})
+
+// AI Copilot (natural-language agent) + Autopilot briefing
+registerCopilotRoutes(app, {
+  kv,
+  requireAuth,
+  callAI: callGeminiAPI,
+  parseBalanceKey,
+  generateId
 })
 
 Deno.serve(app.fetch)

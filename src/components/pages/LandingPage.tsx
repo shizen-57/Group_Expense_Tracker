@@ -14,31 +14,31 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
   const features = [
     {
       icon: Brain,
-      title: 'Autonomous Expense OS',
-      description: 'AI orchestrates capture, FX normalization, and categorisation with full audit trails.',
+      title: 'AI Copilot that takes action',
+      description: 'Type or speak — "I paid 1200 for dinner, split with Rahim and Karim" — and the Copilot validates and executes it.',
       color: 'from-emerald-500/20 via-emerald-400/5 to-transparent',
-      highlights: ['Self-healing categories', 'Smart OCR cleanup', 'Policy-aware automation']
+      highlights: ['Natural-language commands', 'Confirm before anything changes', 'Voice input + ⌘K']
     },
     {
       icon: Layers,
-      title: 'Lightning Split Engine',
-      description: 'Blend equal, weighted, smart, or income-based splits in a single swipeable flow.',
+      title: 'Autopilot across every group',
+      description: 'One briefing that reads all your groups at once: who owes whom, the minimum transfers to settle, and one-click fixes.',
       color: 'from-purple-500/20 via-violet-500/5 to-transparent',
-      highlights: ['5 split presets', 'Drag-to-adjust weights', 'Auto debt simplifier']
+      highlights: ['Cross-group settlement plan', 'Debt simplification', 'Financial health score']
     },
     {
       icon: ShieldCheck,
-      title: 'Bank-grade Safeguards',
-      description: 'Role-aware sharing, anomaly flags, and biometric approvals keep teams confident.',
+      title: 'Smart split engine',
+      description: 'Equal, unequal, percentage, itemised, who-joined and by-duration splits with exact-to-the-paisa balances.',
       color: 'from-blue-500/20 via-cyan-400/5 to-transparent',
-      highlights: ['Granular roles', 'Anomaly detection', 'Encrypted vault storage']
+      highlights: ['7 split strategies', 'Receipt scanning', 'Record & settle payments']
     },
     {
       icon: Gauge,
-      title: 'Realtime Finance Room',
-      description: 'See burn, runway, and budget drift update every 15 seconds with AI commentary.',
+      title: 'Forecasts & signals',
+      description: 'Budget burn-rate forecasts, unusual-purchase alerts and recurring-bill detection keep surprises away.',
       color: 'from-amber-500/20 via-orange-400/5 to-transparent',
-      highlights: ['Scenario sandboxes', 'Multi-wallet view', 'AI insight threads']
+      highlights: ['Month-end projection', 'Anomaly detection', 'Recurring expense radar']
     }
   ]
 
@@ -104,7 +104,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
     {
       name: 'Aisha Rahman',
       role: 'Finance Lead, Pathao',
-      text: 'ExpenseTracker keeps our campaign spend on rails and the AI nudges actually feel like a teammate.',
+      text: 'ExpenseFlow keeps our campaign spend on rails and the AI nudges actually feel like a teammate.',
       image: 'https://images.unsplash.com/photo-1676385901160-ac6e71a19d91?w=400'
     },
     {
@@ -167,8 +167,8 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
               <div>
-                <p className="text-sm uppercase tracking-[0.4em] text-emerald-500/80">Expense OS</p>
-                <p className="text-lg font-semibold text-gray-900">ExpenseTracker</p>
+                <p className="text-sm uppercase tracking-[0.4em] text-emerald-500/80">AI Expense OS</p>
+                <p className="text-lg font-semibold text-gray-900">ExpenseFlow</p>
               </div>
             </div>
 
@@ -218,18 +218,18 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
             >
               <div className="inline-flex items-center gap-3 rounded-full border border-emerald-100 bg-white px-5 py-2 text-sm font-medium text-emerald-600 shadow-sm">
                 <Sparkles className="h-4 w-4" />
-                NEW • AI Smart Splits
+                NEW • AI Copilot & Autopilot
               </div>
               <div>
                 <h1 className="text-4xl sm:text-5xl lg:text-[58px] leading-tight text-gray-900">
-                  Expense OS built for product-minded teams in{' '}
+                  The AI that runs your{' '}
                   <span className="bg-gradient-to-r from-emerald-500 via-teal-500 to-lime-500 bg-clip-text text-transparent">
-                    Dhaka and beyond
+                    group expenses
                   </span>
                 </h1>
                 <p className="mt-6 text-lg text-gray-600 max-w-2xl">
-                  Capture, split, and forecast every Taka in seconds. ExpenseTracker watches receipts,
-                  FX, and policies 24/7 so your crew can stay shipping.
+                  Tell it what happened in plain words. ExpenseFlow splits the bill, settles debts across
+                  every group, forecasts your budgets and flags what needs attention — in Taka.
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-4">
@@ -646,7 +646,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
                   <Sparkles className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-white">ExpenseTracker</span>
+                <span className="text-white">ExpenseFlow</span>
               </div>
               <p className="text-sm">
                 AI-powered expense management for everyone
@@ -685,7 +685,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
           </div>
           
           <div className="pt-8 border-t border-gray-800 text-center text-sm">
-            <p>&copy; 2024 ExpenseTracker. All rights reserved. Made with ❤️ in Bangladesh</p>
+            <p>&copy; 2026 ExpenseFlow. All rights reserved. Made with ❤️ in Bangladesh</p>
           </div>
         </div>
       </footer>

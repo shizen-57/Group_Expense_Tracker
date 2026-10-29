@@ -1,8 +1,9 @@
-import { Coffee, ShoppingBag, Home, Utensils, Car, Film, Plane, Gift, Heart, Zap } from 'lucide-react'
+import { Coffee, ShoppingBag, Shirt, Home, Utensils, Car, Film, Plane, Gift, Heart, Zap } from 'lucide-react'
 
 export const expenseCategories = [
   { id: 'food', label: 'Food & Dining', icon: Utensils, color: 'text-orange-600', bgColor: 'bg-orange-50' },
   { id: 'groceries', label: 'Groceries', icon: ShoppingBag, color: 'text-green-600', bgColor: 'bg-green-50' },
+  { id: 'shopping', label: 'Shopping', icon: Shirt, color: 'text-rose-600', bgColor: 'bg-rose-50' },
   { id: 'transport', label: 'Transport', icon: Car, color: 'text-blue-600', bgColor: 'bg-blue-50' },
   { id: 'entertainment', label: 'Entertainment', icon: Film, color: 'text-purple-600', bgColor: 'bg-purple-50' },
   { id: 'utilities', label: 'Utilities', icon: Zap, color: 'text-yellow-600', bgColor: 'bg-yellow-50' },
