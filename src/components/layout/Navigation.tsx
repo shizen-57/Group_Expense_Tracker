@@ -1,13 +1,15 @@
-import { Home, Users, Activity, User, Wallet, Receipt, Sparkles, PanelsTopLeft } from 'lucide-react'
+import { Home, Users, Activity, User, Wallet, Receipt, Sparkles, BrainCircuit } from 'lucide-react'
+import type { AppPage } from '../../utils/ai/agentActions'
 import { NotificationCenter } from '../notifications/NotificationCenter'
 
 interface NavigationProps {
-  currentPage: 'dashboard' | 'expenses' | 'groups' | 'friends' | 'activity' | 'profile' | 'ai-insights'
-  onNavigate: (page: 'dashboard' | 'expenses' | 'groups' | 'friends' | 'activity' | 'profile' | 'ai-insights') => void
+  currentPage: AppPage
+  onNavigate: (page: AppPage) => void
 }
 
 export function Navigation({ currentPage, onNavigate }: NavigationProps) {
   const navItems = [
+    { id: 'command' as const, label: 'AI Command', icon: BrainCircuit },
     { id: 'expenses' as const, label: 'Expenses', icon: Receipt },
     { id: 'ai-insights' as const, label: 'AI Insights', icon: Sparkles },
     { id: 'dashboard' as const, label: 'Overview', icon: Home },
@@ -24,13 +26,13 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
             <div className="rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-400 p-2 text-white shadow-lg">
               <Wallet className="h-5 w-5" />
             </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.4em] text-emerald-600">Expense OS</p>
+            <div className="hidden md:block">
+              <p className="text-xs uppercase tracking-[0.4em] text-emerald-600">AI Expense OS</p>
               <p className="text-lg font-semibold text-gray-900">ExpenseFlow</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto py-2">
             <NotificationCenter />
             {navItems.map((item) => {
               const Icon = item.icon
@@ -39,7 +41,7 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
                 <button
                   key={item.id}
                   onClick={() => onNavigate(item.id)}
-                  className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 rounded-full px-2.5 sm:px-4 py-2 text-sm shrink-0 font-medium transition-all ${
                     isActive
                       ? 'bg-gray-900 text-white shadow-lg shadow-emerald-200/40'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-white'

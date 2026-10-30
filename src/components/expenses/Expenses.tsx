@@ -43,11 +43,23 @@ export function Expenses({
   const [addExpenseOpen, setAddExpenseOpen] = useState(false)
   const [scannerOpen, setScannerOpen] = useState(false)
 
+  // Derive glance metrics from the ledger when the stats endpoint doesn't provide them
+  const expenseList: any[] = Array.isArray(expenses) ? expenses : []
+  const thirtyDaysAgo = Date.now() - 30 * 86400000
+  const recent = expenseList.filter((e) => new Date(e.createdAt).getTime() >= thirtyDaysAgo)
+  const derivedAverage = recent.length ? recent.reduce((sum, e) => sum + (Number(e.amount) || 0), 0) / recent.length : 0
+  const categoryTotals = recent.reduce((acc: Record<string, number>, e) => {
+    const key = e.category || 'other'
+    acc[key] = (acc[key] || 0) + (Number(e.amount) || 0)
+    return acc
+  }, {})
+  const [derivedTopCategory, derivedTopAmount] = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0] || ['General', 0]
+
   const safeStats = {
     monthlyTotal: stats?.monthlyTotal ?? stats?.totalSpent ?? 0,
-    rollingAverage: stats?.rollingAverage ?? stats?.average ?? 0,
-    topCategory: stats?.topCategory ?? 'General',
-    topCategoryAmount: stats?.topCategoryAmount ?? stats?.largestExpense ?? 0,
+    rollingAverage: stats?.rollingAverage ?? stats?.average ?? derivedAverage,
+    topCategory: stats?.topCategory ?? derivedTopCategory.charAt(0).toUpperCase() + derivedTopCategory.slice(1),
+    topCategoryAmount: stats?.topCategoryAmount ?? stats?.largestExpense ?? derivedTopAmount,
     receiptsProcessed: stats?.receiptsProcessed ?? 0,
     activeBudgets: stats?.activeBudgets ?? budgets?.length ?? 0,
     ...stats
@@ -153,7 +165,7 @@ export function Expenses({
                     key={action.label}
                     onClick={action.onClick}
                     variant={action.intent === 'primary' ? 'secondary' : 'outline'}
-                    className={`rounded-full ${action.intent === 'primary' ? 'bg-white text-gray-900 hover:bg-white/90' : 'border-white/30 text-white hover:bg-white/10'}`}
+                    className={`rounded-full ${action.intent === 'primary' ? 'bg-white text-gray-900 hover:bg-white/90' : 'border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white'}`}
                   >
                     <Icon className="mr-2 h-4 w-4" />
                     {action.label}

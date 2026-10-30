@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { useState, lazy, Suspense, useCallback } from 'react'
 import { motion } from 'motion/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from './components/ui/sonner'
@@ -6,6 +6,8 @@ import { LoadingScreen } from './components/layout/LoadingScreen'
 import { LandingPage } from './components/pages/LandingPage'
 import { AuthLayout } from './components/layout/AuthLayout'
 import { Navigation } from './components/layout/Navigation'
+import { CopilotProvider } from './components/copilot/CopilotPanel'
+import type { AppPage } from './utils/ai/agentActions'
 import { useAuth } from './hooks/useAuth'
 import { useOptimizedGroups } from './hooks/useOptimizedGroups'
 import { useOptimizedFriends } from './hooks/useOptimizedFriends'
@@ -24,8 +26,9 @@ const FriendsPage = lazy(() => import('./components/pages/FriendsPage').then(m =
 const ActivityPage = lazy(() => import('./components/pages/ActivityPage').then(m => ({ default: m.ActivityPage })))
 const ProfilePage = lazy(() => import('./components/pages/ProfilePage').then(m => ({ default: m.ProfilePage })))
 const AIInsightsPage = lazy(() => import('./components/pages/AIInsightsPage').then(m => ({ default: m.AIInsightsPage })))
+const CommandCenterPage = lazy(() => import('./components/pages/CommandCenterPage').then(m => ({ default: m.CommandCenterPage })))
 
-type Page = 'landing' | 'dashboard' | 'expenses' | 'groups' | 'friends' | 'activity' | 'profile' | 'ai-insights'
+type Page = AppPage
 
 // Page loading fallback
 function PageLoader() {
@@ -38,7 +41,7 @@ function PageLoader() {
 
 function AppContent() {
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot-password'>('login')
-  const [currentPage, setCurrentPage] = useState<Page>('expenses')
+  const [currentPage, setCurrentPage] = useState<Page>('command')
   const [showLanding, setShowLanding] = useState(true)
   
   // Custom hooks for state management with React Query
@@ -64,6 +67,12 @@ function AppContent() {
     setCurrentPage('groups')
     groups.handleSelectGroup(groupId)
   }
+
+  // Lets the AI Copilot and Command Center move around the app
+  const handleAgentNavigate = useCallback((page: AppPage, groupId?: string) => {
+    setCurrentPage(page)
+    if (page === 'groups') groups.handleSelectGroup(groupId ?? null)
+  }, [groups.handleSelectGroup])
 
   // Handle signup and switch to login
   const handleSignupWrapper = async (data: { name: string; email: string; password: string; phone: string; username: string }) => {
@@ -116,6 +125,7 @@ function AppContent() {
   }
 
   return (
+    <CopilotProvider accessToken={accessToken} currentPage={currentPage} navigate={handleAgentNavigate}>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -125,6 +135,16 @@ function AppContent() {
       <Navigation currentPage={currentPage} onNavigate={setCurrentPage} />
       
       <main className="px-4 py-8 pb-20">
+        {currentPage === 'command' && (
+          <Suspense fallback={<PageLoader />}>
+            <CommandCenterPage
+              accessToken={accessToken}
+              userName={user.name}
+              onNavigate={handleAgentNavigate}
+            />
+          </Suspense>
+        )}
+
         {currentPage === 'dashboard' && (
           <Suspense fallback={<PageLoader />}>
             <DashboardPage 
@@ -228,6 +248,7 @@ function AppContent() {
 
       <Toaster />
     </motion.div>
+    </CopilotProvider>
   )
 }
 

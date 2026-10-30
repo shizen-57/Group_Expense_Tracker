@@ -179,7 +179,7 @@ export function Dashboard({ stats, onNavigate }: DashboardProps) {
               </Button>
               <Button
                 variant="outline"
-                className="rounded-full border-white/30 text-white hover:bg-white/10"
+                className="rounded-full border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white"
                 onClick={exportToDashboardCSV}
               >
                 <Download className="mr-2 h-4 w-4" />

@@ -234,7 +234,7 @@ export function AIInsightsPage({ onGetAIInsights }: AIInsightsPageProps) {
               Signal Deck
             </div>
             <div>
-              <h1 className="text-4xl lg:text-5xl font-semibold leading-tight">AI command center</h1>
+              <h1 className="text-4xl lg:text-5xl font-semibold leading-tight">AI spending insights</h1>
               <p className="mt-4 max-w-2xl text-white/70">{summaryCopy}</p>
             </div>
             <div className="flex flex-wrap gap-2 rounded-full bg-white/10 p-1">
@@ -262,7 +262,7 @@ export function AIInsightsPage({ onGetAIInsights }: AIInsightsPageProps) {
               </Button>
               <Button
                 variant="outline"
-                className="rounded-full border-white/30 text-white hover:bg-white/10"
+                className="rounded-full border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white"
                 onClick={() => setTimeFilter(timeFilter === 'month' ? 'quarter' : 'month')}
               >
                 <Calendar className="mr-2 h-4 w-4" />
